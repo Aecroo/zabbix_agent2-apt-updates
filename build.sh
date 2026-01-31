@@ -69,8 +69,8 @@ build_docker() {
     # Create dist directory if it doesn't exist
     mkdir -p dist
 
-    # Run docker-compose build for builder service
-    docker-compose up --build builder
+    # Run docker compose build for builder service
+    docker compose up --build builder
 
     echo -e "${GREEN}Docker build complete!${NC}"
     ls -lh dist/
@@ -103,7 +103,7 @@ deploy() {
         build_docker
     fi
 
-    docker-compose up -d agent
+    docker compose up -d agent
     echo -e "${GREEN}Deployment complete!${NC}"
     echo -e "${BLUE}You can check the status with: docker-compose ps${NC}"
 }
@@ -112,7 +112,7 @@ deploy() {
 start() {
     echo -e "${BLUE}Starting Zabbix Agent container...${NC}"
     cd "$PROJECT_DIR"
-    docker-compose start agent
+    docker compose start agent
     echo -e "${GREEN}Container started!${NC}"
 }
 
@@ -120,7 +120,7 @@ start() {
 stop() {
     echo -e "${BLUE}Stopping Zabbix Agent container...${NC}"
     cd "$PROJECT_DIR"
-    docker-compose stop agent
+    docker compose stop agent
     echo -e "${GREEN}Container stopped!${NC}"
 }
 
@@ -128,14 +128,14 @@ stop() {
 logs() {
     echo -e "${BLUE}Viewing container logs...${NC}"
     cd "$PROJECT_DIR"
-    docker-compose logs -f agent
+    docker compose logs -f agent
 }
 
 # Get shell in dev container
 shell() {
     echo -e "${BLUE}Starting development container...${NC}"
     cd "$PROJECT_DIR"
-    docker-compose run --service-ports dev sh
+    docker compose run --service-ports dev sh
 }
 
 # Main execution

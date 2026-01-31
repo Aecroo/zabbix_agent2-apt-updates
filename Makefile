@@ -15,10 +15,14 @@ all: build
 
 build: $(NAME)
 
-$(NAME): main.go apt_updates_check.go go.mod go.sum
+$(NAME): main.go go.mod go.sum
 	@echo "Building $(NAME) v$(VERSION) for $(GOOS)/$(GOARCH)..."
-	@GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BUILD_DIR)/$(NAME)-$(GOOS)-$(GOARCH)
-	@echo "Build complete: $(BUILD_DIR)/$(NAME)-$(GOOS)-$(GOARCH)"
+	@if [ -n "$(GOARM)" ]; then \
+		GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) go build -o $(BUILD_DIR)/$(NAME)-$(GOOS)-$(GOARCH)v$(GOARM); \
+	else \
+		GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BUILD_DIR)/$(NAME)-$(GOOS)-$(GOARCH); \
+	fi
+	@echo "Build complete: $(BUILD_DIR)/$(NAME)-$(GOOS)-$(GOARCH)$(if $(GOARM),v$(GOARM),)"
 
 clean:
 	@echo "Cleaning build artifacts..."

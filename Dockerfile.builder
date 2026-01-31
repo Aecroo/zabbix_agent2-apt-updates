@@ -24,15 +24,15 @@ RUN for GOOS in linux; do \
     for GOARCH in amd64 arm64 arm; do \
         if [ "$GOARCH" = "arm" ]; then \
             for GOARM in 7; do \
-                export GOARM=$GOARM \
-                make build-linux-arm${GOARM} \
-                && mv dist/zabbix-apt-updates-linux-arm${GOARM} dist/zabbix-apt-updates-linux-armv${GOARM} \
-                || echo "Build failed for armv${GOARM}"; \
+                export GOARM=$GOARM; \
+                echo "Building for ${GOOS}-${GOARCH}v${GOARM}..." && \
+                make GOOS=$GOOS GOARCH=$GOARCH build || \
+                (echo "Build failed for armv${GOARM}"; exit 1); \
             done; \
         else \
-            make GOOS=$GOOS GOARCH=$GOARCH build \
-            && mv dist/zabbix-apt-updates-linux-${GOARCH} dist/zabbix-apt-updates-linux-${GOARCH} \
-            || echo "Build failed for ${GOOS}-${GOARCH}"; \
+            echo "Building for ${GOOS}-${GOARCH}..." && \
+            make GOOS=$GOOS GOARCH=$GOARCH build || \
+            (echo "Build failed for ${GOOS}-${GOARCH}"; exit 1); \
         fi; \
     done; \
 done
