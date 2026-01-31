@@ -1,1 +1,24 @@
+# Build output
+/dist/
+*.exe
+*.out
+*.so
+
+# Go build artifacts
+go-build*
+
+# Test and coverage output
+# *_test.go  # Keep test files in repo for documentation
+*.coverprofile
+
+# IDE and editor files
+.idea/
+.vscode/
+.claude/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# CLAUDE.md should not be tracked
 CLAUDE.md
