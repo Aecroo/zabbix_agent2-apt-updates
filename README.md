@@ -1,12 +1,173 @@
 # Zabbix Agent 2 APT Updates Plugin
 
 [![Docker](https://img.shields.io/badge/Docker-Supported-blue)](docker-compose.yml)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue)](CHANGELOG.md)
 
 A monitoring plugin for Zabbix Agent 2 that checks available package updates on Debian/Ubuntu systems using APT.
 
 ## Overview
 
 This plugin detects available system updates by executing `apt list --upgradable` and returns the count of available updates in a format compatible with Zabbix Agent 2.
+
+## 📋 Normal User Guide - Install on Ubuntu/Debian
+
+This section provides step-by-step instructions for installing and using this plugin on a standard Ubuntu or Debian system.
+
+### Prerequisites
+
+- Ubuntu 20.04 LTS or later, or Debian 10 or later
+- Zabbix Agent 2 installed and configured
+- Basic command line knowledge
+
+### Step 1: Download the Pre-built Binary
+
+Download the latest release from our Git repository:
+
+```bash
+# Create a directory for the plugin
+sudo mkdir -p /usr/local/bin/zabbix-plugins
+
+# Download the binary (Ubuntu/Debian x86_64)
+wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/-/raw/master/dist/zabbix-apt-updates-linux-amd64 \
+  -O /usr/local/bin/zabbix-plugins/zabbix-apt-updates
+
+# Make it executable
+sudo chmod +x /usr/local/bin/zabbix-plugins/zabbix-apt-updates
+```
+
+### Step 2: Configure Zabbix Agent 2
+
+Create a configuration file for the plugin:
+
+```bash
+# Create the config directory if it doesn't exist
+sudo mkdir -p /etc/zabbix/zabbix_agent2.d/
+
+# Create the configuration file
+sudo nano /etc/zabbix/zabbix_agent2.d/userparameter_apt.conf
+```
+
+Paste the following content:
+
+```ini
+# Check for available APT updates
+UserParameter=apt.updates[check],/usr/local/bin/zabbix-plugins/zabbix-apt-updates check
+```
+
+Save and exit (Ctrl+O, Enter, Ctrl+X in nano).
+
+### Step 3: Test the Plugin
+
+Before restarting Zabbix Agent, test if the plugin works:
+
+```bash
+# Run a manual check
+/usr/local/bin/zabbix-plugins/zabbix-apt-updates check
+
+# Example output:
+# {
+#   "available_updates": 5,
+#   "package_details_list": [
+#     {"name": "curl", "target_version": "7.81.0-1+b2"},
+#     {"name": "nginx", "target_version": "1.18.0-6ubuntu14.3"}
+#   ],
+#   "warning_threshold": 10,
+#   "is_above_warning": false
+# }
+```
+
+### Step 4: Restart Zabbix Agent
+
+Apply the configuration changes:
+
+```bash
+sudo systemctl restart zabbix-agent2
+```
+
+### Step 5: Verify in Zabbix
+
+1. In your Zabbix web interface, go to **Configuration** > **Hosts**
+2. Select your monitored host
+3. Go to the **Items** tab
+4. Create a new item with:
+   - **Type**: Zabbix Agent (active)
+   - **Key**: `apt.updates[check]`
+   - **Type of information**: Text
+5. Save and wait for data collection
+
+### Step 6: Set Up Monitoring (Optional)
+
+For better monitoring, create items with preprocessing to extract specific values:
+
+**Item for update count:**
+- Key: `apt.updates[check]`
+- Preprocessing:
+  - Type: Regular expression
+  - Pattern: `"available_updates": ([0-9]*)`
+  - Custom on fail: Discard value
+  - Result: `\1`
+
+**Item for warning status:**
+- Key: `apt.updates[check]`
+- Preprocessing:
+  - Type: Regular expression
+  - Pattern: `"is_above_warning": (true|false)`
+  - Custom on fail: Discard value
+  - Result: `\1`
+
+### Step 7: Create Triggers (Optional)
+
+Create triggers to alert when updates are available:
+
+```
+Trigger name: "Many APT updates available"
+Expression: {template_name:apt.updates[check].str(Warning).regexp("true")}=1
+Severity: Warning
+```
+
+### Updating the Plugin
+
+When new versions are released, simply download and replace the binary:
+
+```bash
+# Download the new version
+sudo wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/-/raw/master/dist/zabbix-apt-updates-linux-amd64 \
+  -O /usr/local/bin/zabbix-plugins/zabbix-apt-updates
+
+# Restart Zabbix Agent
+sudo systemctl restart zabbix-agent2
+```
+
+### Troubleshooting for Normal Users
+
+**Problem**: Plugin returns "command not found" error
+- **Solution**: Ensure the binary is in `/usr/local/bin/zabbix-plugins/` and has execute permissions
+
+**Problem**: Zabbix shows "Not supported" for the item
+- **Solution**: Check if Zabbix Agent 2 is running: `sudo systemctl status zabbix-agent2`
+- Verify the configuration file exists in `/etc/zabbix/zabbix_agent2.d/`
+
+**Problem**: Plugin returns error about apt command
+- **Solution**: Run `sudo apt update` first to refresh package lists
+- Ensure you're running as root or the Zabbix agent user has permissions
+
+**Problem**: No updates detected but `apt upgrade` shows packages
+- **Solution**: The plugin uses cached data. Run `sudo apt update` first.
+
+### Uninstalling
+
+To remove the plugin:
+
+```bash
+# Remove the binary
+sudo rm /usr/local/bin/zabbix-plugins/zabbix-apt-updates
+
+# Remove the configuration file
+sudo rm /etc/zabbix/zabbix_agent2.d/userparameter_apt.conf
+
+# Restart Zabbix Agent
+sudo systemctl restart zabbix-agent2
+```
 
 ## Project Structure
 

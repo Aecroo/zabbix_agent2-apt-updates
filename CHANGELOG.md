@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0] - 2026-01-31
+
+### Added
+- Initial stable release of the Zabbix Agent 2 APT Updates plugin
+- Support for Debian/Ubuntu systems (APT package manager)
+- Auto-detection of DNF package manager (RHEL/CentOS/Fedora)
+- JSON output format with detailed package information
+- Configurable warning threshold via environment variable `ZBX_UPDATES_THRESHOLD_WARNING`
+- Debug logging support via environment variable `ZBX_DEBUG`
+- Comprehensive documentation including user guide
+- Pre-built binaries for multiple platforms (AMD64, ARM64, ARMv7)
+- Docker-based build and deployment system
+- Example configuration files
+
+### Changed
+- Improved error handling for missing package managers
+- Better parsing of APT output format
+- Proper handling of apt exit code 100 (no updates available)
+
+### Fixed
+- Correct JSON formatting in all responses
+- Proper exit codes for different error conditions
+- Package name and version extraction from APT output
+
 ## [Unreleased]
 
 ### Added
