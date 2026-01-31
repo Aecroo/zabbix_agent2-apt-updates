@@ -1,5 +1,7 @@
 # Zabbix Agent 2 APT Updates Plugin
 
+[![Docker](https://img.shields.io/badge/Docker-Supported-blue)](docker-compose.yml)
+
 A monitoring plugin for Zabbix Agent 2 that checks available package updates on Debian/Ubuntu systems using APT.
 
 ## Overview
@@ -21,15 +23,34 @@ zabbix_agent2-apt-updates/
 ## Build Instructions
 
 ### Prerequisites
-- Go 1.21 or later
+- Go 1.21 or later (for native builds)
 - Git
+- Docker & Docker Compose (optional, for containerized builds)
 
-### Building
+### Building with Docker (Recommended)
+
+The easiest way to build the plugin is using Docker:
 
 ```bash
 # Clone the repository
 git clone http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates.git
-cd zabbix_agent2-apt-updates
+cd zabbix-agent2-apt-updates
+
+# Build for all platforms using Docker
+docker-compose up builder
+
+# Artifacts will be in the dist/ directory
+ls -lh dist/
+```
+
+### Building Natively
+
+If you have Go installed, you can build natively:
+
+```bash
+# Clone the repository
+git clone http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates.git
+cd zabbix-agent2-apt-updates
 
 # Initialize Go module (if not already done)
 go mod init github.com/netdata/zabbix-agent-apt-updates
@@ -38,6 +59,7 @@ go mod init github.com/netdata/zabbix-agent-apt-updates
 go build -o dist/zabbix-apt-updates
 ```
 
+### Cross-compilation
 ### Cross-compilation
 
 To build for different platforms:
@@ -171,3 +193,79 @@ Contributions are welcome! Please follow these guidelines:
 ## Support
 
 For issues and questions, please open an issue in the project repository.
+
+## Docker Deployment
+
+The project includes Docker support for easy building and deployment.
+
+### Quick Start with Docker Compose
+
+```bash
+# Clone the repository
+git clone http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates.git
+cd zabbix-agent2-apt-updates
+
+# Build and start the Zabbix Agent with the plugin
+docker-compose up -d agent
+```
+
+### Using the Builder Image
+
+To build the plugin for multiple platforms:
+
+```bash
+# Build all platform binaries
+docker-compose up builder
+
+# Artifacts will be available in dist/
+ls -lh dist/
+```
+
+### Customizing the Deployment
+
+Edit `docker-compose.yml` to customize:
+- Zabbix server connection (`ZBX_SERVER_HOST`)
+- Hostname reported to Zabbix (`ZBX_HOSTNAME`)
+- Warning threshold (`ZBX_UPDATES_THRESHOLD_WARNING`)
+- Debug mode (`ZBX_DEBUG=true`)
+
+### Build Script
+
+A convenient build script is provided:
+
+```bash
+# Show help
+./build.sh help
+
+# Build using Docker
+./build.sh build-docker
+
+# Deploy with Docker Compose
+./build.sh deploy
+
+# Start/Stop the container
+./build.sh start
+./build.sh stop
+
+# View logs
+./build.sh logs
+```
+
+### Manual Docker Build
+
+You can also build and run manually:
+
+```bash
+# Build the runtime image
+docker build -t zabbix-apt-updates -f Dockerfile .
+
+# Run the container
+docker run -d \
+  --name zabbix-agent-apt \
+  -p 10050:10050 \
+  -v /var/lib/apt:/var/lib/apt:ro \
+  -v /etc/apt:/etc/apt:ro \
+  -e ZBX_SERVER_HOST=your-zabbix-server \
+  -e ZBX_HOSTNAME=apt-monitor \
+  zabbix-apt-updates
+```

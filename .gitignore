@@ -22,3 +22,18 @@ Thumbs.db
 
 # CLAUDE.md should not be tracked
 CLAUDE.md
+
+# Docker build artifacts
+.docker/
+.dockerversion
+*.log
+
+# Important project files to keep in repo
+docker-compose.yml
+Dockerfile
+Dockerfile.*
+build.sh
+DOCKER.md
+
+# Local configuration files
+.zabbix-agent2.conf

@@ -1,0 +1,65 @@
+# Zabbix Agent 2 APT Updates Plugin - Docker Compose
+#
+# This configuration provides:
+# 1. Builder service to compile the plugin for multiple platforms
+# 2. Runtime service with Zabbix Agent 2 and the plugin installed
+# 3. Development environment for testing
+
+version: '3.8'
+
+services:
+  # Builder service - compiles the plugin for all supported platforms
+  builder:
+    build:
+      context: .
+      dockerfile: Dockerfile.builder
+    volumes:
+      - ./dist:/output
+    working_dir: /output
+    command: sh -c 'echo "Build complete. Artifacts in dist/" && ls -lh'
+
+  # Runtime service - Zabbix Agent 2 with the APT updates plugin
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zabbix-agent-apt-updates
+    restart: unless-stopped
+    ports:
+      - "10050:10050"
+    volumes:
+      # Mount host's APT for real update checking
+      - /var/lib/apt:/var/lib/apt:ro
+      - /etc/apt:/etc/apt:ro
+      # For DNF support on RHEL-based systems (if needed)
+      # - /var/lib/dnf:/var/lib/dnf:ro
+      # - /etc/dnf:/etc/dnf:ro
+    environment:
+      - ZBX_SERVER_HOST=zabbix-server
+      - ZBX_HOSTNAME=apt-monitor
+      - ZBX_UPDATES_THRESHOLD_WARNING=10
+      # - ZBX_DEBUG=true  # Uncomment for debug output
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    tmpfs:
+      - /tmp
+      - /run
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:10050"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Development service - for building and testing locally
+  dev:
+    image: golang:1.21-alpine
+    container_name: zabbix-apt-dev
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    command: sh -c 'tail -f /dev/null'
+    environment:
+      - GO111MODULE=on
+    tty: true
