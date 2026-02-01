@@ -36,9 +36,12 @@ const (
 	// Name of the plugin.
 	Name = "APTUpdates"
 
-	countMetric    = aptMetricKey("apt.updates.count")
-	listMetric     = aptMetricKey("apt.updates.list")
-	detailsMetric  = aptMetricKey("apt.updates.details")
+	countAllMetric        = aptMetricKey("apt.updates[all]")
+	countSecurityMetric   = aptMetricKey("apt.updates[security]")
+	countRecommendedMetric = aptMetricKey("apt.updates[recommended]")
+	countOptionalMetric   = aptMetricKey("apt.updates[optional]")
+	listMetric             = aptMetricKey("apt.updates.list")
+	detailsMetric          = aptMetricKey("apt.updates.details")
 )
 
 var (
@@ -143,9 +146,33 @@ func (p *APTUpdatesPlugin) registerMetrics() error {
 	handler := handlers.New()
 
 	p.metrics = map[aptMetricKey]*aptMetric{
-		countMetric: {
+		countAllMetric: {
 			metric: metric.New(
-				"Returns the number of available APT updates.",
+				"Returns the number of available APT updates (all types).",
+				params.Params,
+				false, // Not text
+			),
+			handler: handler.CheckUpdateCount,
+		},
+		countSecurityMetric: {
+			metric: metric.New(
+				"Returns the number of security updates available.",
+				params.Params,
+				false, // Not text
+			),
+			handler: handler.CheckUpdateCount,
+		},
+		countRecommendedMetric: {
+			metric: metric.New(
+				"Returns the number of recommended updates available.",
+				params.Params,
+				false, // Not text
+			),
+			handler: handler.CheckUpdateCount,
+		},
+		countOptionalMetric: {
+			metric: metric.New(
+				"Returns the number of optional updates available.",
 				params.Params,
 				false, // Not text
 			),
