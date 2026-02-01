@@ -26,5 +26,8 @@ const (
 //nolint:gochecknoglobals // global constants.
 var (
 	// Params groups all base parameters for APT updates plugin.
-	Params = []*metric.Param{}
+	Params = []*metric.Param{
+		metric.NewConnParam("type", "Type of updates to check: all, security, recommended, or optional").
+			WithDefault("all"),
+	}
 )
