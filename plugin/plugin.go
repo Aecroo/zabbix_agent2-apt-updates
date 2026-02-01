@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/netdata/zabbix-agent-apt-updates/plugin/handlers"
-	"github.com/netdata/zabbix-agent-apt-updates/plugin/params"
 	"golang.zabbix.com/sdk/errs"
 	"golang.zabbix.com/sdk/log"
 	"golang.zabbix.com/sdk/metric"
@@ -36,9 +35,7 @@ const (
 	// Name of the plugin.
 	Name = "APTUpdates"
 
-	countMetric    = aptMetricKey("apt.updates")
-	listMetric     = aptMetricKey("apt.updates.list")
-	detailsMetric  = aptMetricKey("apt.updates.details")
+	allMetric = aptMetricKey("updates.get")
 )
 
 var (
@@ -149,29 +146,13 @@ func (p *APTUpdatesPlugin) registerMetrics() error {
 	handler := handlers.New()
 
 	p.metrics = map[aptMetricKey]*aptMetric{
-		countMetric: {
+		allMetric: {
 			metric: metric.New(
-				"Returns the number of available APT updates. Use apt.updates[all], apt.updates[security], apt.updates[recommended], or apt.updates[optional] to specify update type.",
-				params.Params,
-				false, // Not text
+				"Returns comprehensive information about all available APT updates. Returns a JSON object with counts, lists, and details for all, security, recommended, and optional updates.",
+				[]*metric.Param{}, // No parameters needed
+				true, // Text output (JSON)
 			),
-			handler: handler.CheckUpdateCount,
-		},
-		listMetric: {
-			metric: metric.New(
-				"Returns a list of package names with available APT updates. Use apt.updates.list[all], apt.updates.list[security], etc. to specify update type.",
-				params.Params,
-				true, // Text output
-			),
-			handler: handlers.WithJSONResponse(handler.GetUpdateList),
-		},
-		detailsMetric: {
-			metric: metric.New(
-				"Returns detailed information about available APT updates including versions. Use apt.updates.details[all], apt.updates.details[security], etc. to specify update type.",
-				params.Params,
-				true, // Text output
-			),
-			handler: handlers.WithJSONResponse(handler.GetUpdateDetails),
+			handler: handlers.WithJSONResponse(handler.GetAllUpdates),
 		},
 	}
 

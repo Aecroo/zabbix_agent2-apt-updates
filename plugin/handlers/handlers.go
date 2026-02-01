@@ -58,6 +58,24 @@ type Handler struct {
 	sysCalls systemCalls
 }
 
+// GetAllUpdates returns comprehensive information about all available APT updates
+type AllUpdatesResult struct {
+	SecurityUpdatesCount     int         `json:"security_updates_count"`
+	RecommendedUpdatesCount  int         `json:"recommended_updates_count"`
+	OptionalUpdatesCount    int         `json:"optional_updates_count"`
+	AllUpdatesCount         int         `json:"all_updates_count"`
+
+	SecurityUpdatesList     []string   `json:"security_updates_list,omitempty"`
+	RecommendedUpdatesList  []string   `json:"recommended_updates_list,omitempty"`
+	OptionalUpdatesList    []string   `json:"optional_updates_list,omitempty"`
+	AllUpdatesList         []string   `json:"all_updates_list,omitempty"`
+
+	SecurityUpdatesDetails  []UpdateInfo `json:"security_updates_details,omitempty"`
+	RecommendedUpdatesDetails []UpdateInfo `json:"recommended_updates_details,omitempty"`
+	OptionalUpdatesDetails   []UpdateInfo `json:"optional_updates_details,omitempty"`
+	AllUpdatesDetails      []UpdateInfo `json:"all_updates_details,omitempty"`
+}
+
 // UpdateInfo represents a single package update
 type UpdateInfo struct {
 	Name    string `json:"name"`
@@ -112,6 +130,69 @@ func (h *Handler) GetUpdateDetails(ctx context.Context, metricParams map[string]
 	result, err := h.checkAPTUpdates(ctx, updateType)
 	if err != nil {
 		return nil, errs.Wrap(err, "failed to check APT updates")
+	}
+
+	return result, nil
+}
+
+// GetAllUpdates returns comprehensive information about all types of available APT updates
+func (h *Handler) GetAllUpdates(ctx context.Context, metricParams map[string]string, extraParams ...string) (any, error) {
+	result := &AllUpdatesResult{}
+
+	// Get all updates first
+	allUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeAll)
+	if err != nil {
+		return nil, errs.Wrap(err, "failed to check APT updates for 'all'")
+	}
+
+	result.AllUpdatesCount = allUpdates.AvailableUpdates
+	result.AllUpdatesList = make([]string, len(allUpdates.PackageDetailsList))
+	result.AllUpdatesDetails = make([]UpdateInfo, len(allUpdates.PackageDetailsList))
+	for i, pkg := range allUpdates.PackageDetailsList {
+		result.AllUpdatesList[i] = pkg.Name
+		result.AllUpdatesDetails[i] = pkg
+	}
+
+	// Get security updates
+	securityUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeSecurity)
+	if err != nil {
+		return nil, errs.Wrap(err, "failed to check APT updates for 'security'")
+	}
+
+	result.SecurityUpdatesCount = securityUpdates.AvailableUpdates
+	result.SecurityUpdatesList = make([]string, len(securityUpdates.PackageDetailsList))
+	result.SecurityUpdatesDetails = make([]UpdateInfo, len(securityUpdates.PackageDetailsList))
+	for i, pkg := range securityUpdates.PackageDetailsList {
+		result.SecurityUpdatesList[i] = pkg.Name
+		result.SecurityUpdatesDetails[i] = pkg
+	}
+
+	// Get recommended updates
+	recommendedUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeRecommended)
+	if err != nil {
+		return nil, errs.Wrap(err, "failed to check APT updates for 'recommended'")
+	}
+
+	result.RecommendedUpdatesCount = recommendedUpdates.AvailableUpdates
+	result.RecommendedUpdatesList = make([]string, len(recommendedUpdates.PackageDetailsList))
+	result.RecommendedUpdatesDetails = make([]UpdateInfo, len(recommendedUpdates.PackageDetailsList))
+	for i, pkg := range recommendedUpdates.PackageDetailsList {
+		result.RecommendedUpdatesList[i] = pkg.Name
+		result.RecommendedUpdatesDetails[i] = pkg
+	}
+
+	// Get optional updates
+	optionalUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeOptional)
+	if err != nil {
+		return nil, errs.Wrap(err, "failed to check APT updates for 'optional'")
+	}
+
+	result.OptionalUpdatesCount = optionalUpdates.AvailableUpdates
+	result.OptionalUpdatesList = make([]string, len(optionalUpdates.PackageDetailsList))
+	result.OptionalUpdatesDetails = make([]UpdateInfo, len(optionalUpdates.PackageDetailsList))
+	for i, pkg := range optionalUpdates.PackageDetailsList {
+		result.OptionalUpdatesList[i] = pkg.Name
+		result.OptionalUpdatesDetails[i] = pkg
 	}
 
 	return result, nil

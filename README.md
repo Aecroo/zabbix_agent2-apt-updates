@@ -75,19 +75,49 @@ sudo systemctl restart zabbix-agent2
 3. Go to the **Items** tab
 4. Create a new item with:
    - **Type**: Zabbix Agent (active)
-   - **Key**: `apt.updates[security]` or `apt.updates[all]`
-   - **Type of information**: Numeric (float)
+   - **Key**: `updates.get`
+   - **Type of information**: Text
 5. Save and wait for data collection
 
 ### Step 6: Set Up Monitoring (Optional)
 
-The plugin supports multiple item keys for different update types:
+The plugin returns comprehensive JSON data that can be processed using Zabbix's JSONPath preprocessing.
 
 **Item Keys:**
-- `apt.updates[security]` - Count of security updates available
-- `apt.updates[all]` - Count of all updates available
-- `apt.updates[recommended]` - Count of recommended updates available
-- `apt.updates[optional]` - Count of optional updates available
+
+- `updates.get` - Returns comprehensive JSON with all update information. Use Zabbix JSONPath preprocessing to extract specific values.
+
+  Example JSONPath expressions:
+  - Security updates count: `.security_updates_count`
+  - All updates count: `.all_updates_count`
+  - Security updates list: `.security_updates_list`
+  - Package details: `.all_updates_details[*].name`
+
+**Creating Items with JSONPath Preprocessing:**
+
+1. Create an item for the raw data:
+   - **Key**: `updates.get`
+   - **Type of information**: Text
+
+2. Create dependent items using JSONPath preprocessing:
+
+   Example: Security updates count
+   - **Type**: Zabbix Agent (active)
+   - **Key**: `updates.get`
+   - **Type of information**: Numeric (float)
+   - **Preprocessing**: JSONPath "`.security_updates_count`"
+
+   Example: Total updates count
+   - **Type**: Zabbix Agent (active)
+   - **Key**: `updates.get`
+   - **Type of information**: Numeric (float)
+   - **Preprocessing**: JSONPath "`.all_updates_count`"
+
+   Example: List of security updates
+   - **Type**: Zabbix Agent (active)
+   - **Key**: `updates.get`
+   - **Type of information**: Text
+   - **Preprocessing**: JSONPath "`.security_updates_list`"
 
 ### Step 7: Create Triggers (Optional)
 
@@ -95,7 +125,7 @@ Create triggers to alert when updates are available:
 
 ```
 Trigger name: "Security updates available"
-Expression: {template_name:apt.updates[security].last()}>0
+Expression: {template_name:updates.get.security_updates_count.last()}>0
 Severity: Information
 ```
 
@@ -270,10 +300,7 @@ Create the following items in your Zabbix template:
 
 | Item Key | Type | Description |
 |----------|------|-------------|
-| `apt.updates[security]` | Zabbix Agent (active) | Returns count of security updates available |
-| `apt.updates[all]` | Zabbix Agent (active) | Returns count of all updates available |
-| `apt.updates[recommended]` | Zabbix Agent (active) | Returns count of recommended updates available |
-| `apt.updates[optional]` | Zabbix Agent (active) | Returns count of optional updates available |
+| `updates.get` | Zabbix Agent (active) | Returns comprehensive JSON with all update information |
 
 ## Configuration
 

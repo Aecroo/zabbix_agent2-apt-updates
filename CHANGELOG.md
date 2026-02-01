@@ -8,7 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- **Bracket notation support**: Restored parameter definition in params.go that was accidentally removed in issue #2 fix. The "type" parameter is now defined with default value "all", allowing bracket notation like `apt.updates[security]`, `apt.updates[all]`, etc. to work correctly.
+- **Issue #5 - Duplicate item values**: Simplified the plugin to use a single item key `updates.get` that returns comprehensive JSON data with all update types (security, recommended, optional, all). Users can now extract specific values using Zabbix JSONPath preprocessing instead of having multiple item keys that returned duplicate data.
+
+### Changed
+- **Metric System**: Replaced multiple metrics (`apt.updates`, `apt.updates.list`, `apt.updates.details`) with a single unified metric (`updates.get`) that returns comprehensive JSON data
+- **API Design**: Simplified from multiple item keys with bracket notation to one item key with JSONPath-based value extraction
+- **Handler Functions**: Removed individual handlers for count/list/details and consolidated into `GetAllUpdates` handler
 
 ## [0.4.1] - 2026-02-01
 
