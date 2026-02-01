@@ -200,8 +200,8 @@ ls -lh dist/
 If you have Go installed, you can build natively:
 
 ```bash
-# Clone the repository (including zabbix_example submodule)
-git clone --recursive http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates.git
+# Clone the repository
+git clone http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates.git
 cd zabbix-agent2-apt-updates
 
 # Build for current platform (Linux AMD64)
