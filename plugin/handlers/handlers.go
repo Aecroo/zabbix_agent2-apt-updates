@@ -44,6 +44,16 @@ type HandlerFunc func(
 	extraParams ...string,
 ) (any, error)
 
+// UpdateType represents the type of update to check
+type UpdateType string
+
+const (
+	UpdateTypeAll        UpdateType = "all"
+	UpdateTypeSecurity   UpdateType = "security"
+	UpdateTypeRecommended UpdateType = "recommended"
+	UpdateTypeOptional   UpdateType = "optional"
+)
+
 // Handler holds syscall implementation for request functions.
 type Handler struct {
 	sysCalls systemCalls
@@ -71,14 +81,15 @@ type systemCalls interface {
 type osWrapper struct{}
 
 // CheckUpdateCount returns the number of available APT updates
-func (h *Handler) CheckUpdateCount(ctx context.Context, metricParams map[string]string, _ ...string) (any, error) {
+func (h *Handler) CheckUpdateCount(ctx context.Context, metricParams map[string]string, extraParams ...string) (any, error) {
+	updateType := getUpdateTypeFromExtra(extraParams)
 	thresholdStr := metricParams["WarningThreshold"]
 	threshold, err := strconv.Atoi(thresholdStr)
 	if err != nil {
 		threshold = 10 // default
 	}
 
-	result, err := h.checkAPTUpdates(ctx)
+	result, err := h.checkAPTUpdates(ctx, updateType)
 	if err != nil {
 		return nil, errs.Wrap(err, "failed to check APT updates")
 	}
@@ -91,8 +102,9 @@ func (h *Handler) CheckUpdateCount(ctx context.Context, metricParams map[string]
 }
 
 // GetUpdateList returns a JSON list of available APT updates
-func (h *Handler) GetUpdateList(ctx context.Context, metricParams map[string]string, _ ...string) (any, error) {
-	result, err := h.checkAPTUpdates(ctx)
+func (h *Handler) GetUpdateList(ctx context.Context, metricParams map[string]string, extraParams ...string) (any, error) {
+	updateType := getUpdateTypeFromExtra(extraParams)
+	result, err := h.checkAPTUpdates(ctx, updateType)
 	if err != nil {
 		return nil, errs.Wrap(err, "failed to check APT updates")
 	}
@@ -107,8 +119,9 @@ func (h *Handler) GetUpdateList(ctx context.Context, metricParams map[string]str
 }
 
 // GetUpdateDetails returns detailed information about available APT updates
-func (h *Handler) GetUpdateDetails(ctx context.Context, metricParams map[string]string, _ ...string) (any, error) {
-	result, err := h.checkAPTUpdates(ctx)
+func (h *Handler) GetUpdateDetails(ctx context.Context, metricParams map[string]string, extraParams ...string) (any, error) {
+	updateType := getUpdateTypeFromExtra(extraParams)
+	result, err := h.checkAPTUpdates(ctx, updateType)
 	if err != nil {
 		return nil, errs.Wrap(err, "failed to check APT updates")
 	}
@@ -152,8 +165,85 @@ func WithJSONResponse(handler HandlerFunc) HandlerFunc {
 	}
 }
 
+// getUpdateTypeFromExtra extracts the update type from extra parameters
+// When user calls apt.updates[security], Zabbix passes "security" as first extra param
+func getUpdateTypeFromExtra(extraParams []string) UpdateType {
+	if len(extraParams) > 0 {
+		typeStr := strings.TrimSpace(extraParams[0])
+		switch typeStr {
+		case "security":
+			return UpdateTypeSecurity
+		case "recommended":
+			return UpdateTypeRecommended
+		case "optional":
+			return UpdateTypeOptional
+		}
+	}
+	return UpdateTypeAll
+}
+
+// getUpdateType extracts the update type from metric parameters (fallback method)
+func getUpdateType(metricParams map[string]string) UpdateType {
+	// The parameter name is the bracket content in apt.updates[security]
+	for key := range metricParams {
+		if strings.Contains(key, "[") && strings.Contains(key, "]") {
+			// Extract the content between brackets
+			start := strings.Index(key, "[")
+			end := strings.Index(key, "]")
+			if start >= 0 && end > start {
+				return UpdateType(strings.TrimSpace(key[start+1 : end]))
+			}
+		}
+	}
+	return UpdateTypeAll
+}
+
+// isPackageOfType checks if a package belongs to a specific update type category
+func (h *Handler) isPackageOfType(ctx context.Context, pkgName string, updateType UpdateType) (bool, error) {
+	switch updateType {
+	case UpdateTypeSecurity:
+		// Check if package comes from security repository
+		cmd := h.sysCalls.execCommand(ctx, "apt-cache", "policy", pkgName)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return false, fmt.Errorf("failed to check policy for %s: %w", pkgName, err)
+		}
+
+		// Look for security repository in the output
+		outputStr := string(output)
+		// Security packages come from repositories like:
+		//   https://security.ubuntu.com/ubuntu
+		//   http://security.debian.org
+		return strings.Contains(outputStr, "security.") ||
+			strings.Contains(outputStr, "Ubuntu: noble-security") ||
+			strings.Contains(outputStr, "Debian-Security"), nil
+
+	case UpdateTypeRecommended:
+		// For now, treat recommended as all updates (can be enhanced later)
+		// In Debian/Ubuntu, there's no direct way to distinguish recommended vs optional
+		// Both are typically in the main repositories
+		return true, nil
+
+	case UpdateTypeOptional:
+		// Optional packages - these would be from universe/multiverse
+		cmd := h.sysCalls.execCommand(ctx, "apt-cache", "policy", pkgName)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return false, fmt.Errorf("failed to check policy for %s: %w", pkgName, err)
+		}
+
+		outputStr := string(output)
+		// Optional packages typically come from universe/multiverse
+		return strings.Contains(outputStr, "universe") ||
+			strings.Contains(outputStr, "multiverse"), nil
+
+	default:
+		return true, nil
+	}
+}
+
 // checkAPTUpdates executes 'apt list --upgradable' and parses the output
-func (h *Handler) checkAPTUpdates(ctx context.Context) (*CheckResult, error) {
+func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*CheckResult, error) {
 	cmd := h.sysCalls.execCommand(ctx, "apt", "list", "--upgradable")
 
 	output, err := cmd.CombinedOutput()
@@ -195,6 +285,20 @@ func (h *Handler) checkAPTUpdates(ctx context.Context) (*CheckResult, error) {
 
 		pkgName := pkgParts[0]
 		version := parts[len(parts)-1] // Last field is the version
+
+		// Filter by update type if needed
+		if updateType != UpdateTypeAll && updateType != "" {
+			isMatch, err := h.isPackageOfType(ctx, pkgName, updateType)
+			if err != nil {
+				// If we can't determine the type, skip this package for filtered queries
+				if updateType != UpdateTypeAll {
+					continue
+				}
+			}
+			if !isMatch {
+				continue
+			}
+		}
 
 		updates = append(updates, UpdateInfo{
 			Name:   pkgName,
