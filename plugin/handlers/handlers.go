@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"strconv"
 	"strings"
 
 	"golang.zabbix.com/sdk/errs"
@@ -70,8 +69,6 @@ type UpdateInfo struct {
 type CheckResult struct {
 	AvailableUpdates     int         `json:"available_updates"`
 	PackageDetailsList   []UpdateInfo `json:"package_details_list,omitempty"`
-	WarningThreshold     int         `json:"warning_threshold,omitempty"`
-	IsAboveWarning       bool        `json:"is_above_warning,omitempty"`
 }
 
 type systemCalls interface {
@@ -83,20 +80,11 @@ type osWrapper struct{}
 // CheckUpdateCount returns the number of available APT updates
 func (h *Handler) CheckUpdateCount(ctx context.Context, metricParams map[string]string, extraParams ...string) (any, error) {
 	updateType := getUpdateTypeFromExtra(extraParams)
-	thresholdStr := metricParams["WarningThreshold"]
-	threshold, err := strconv.Atoi(thresholdStr)
-	if err != nil {
-		threshold = 10 // default
-	}
 
 	result, err := h.checkAPTUpdates(ctx, updateType)
 	if err != nil {
 		return nil, errs.Wrap(err, "failed to check APT updates")
 	}
-
-	// Store threshold in result for potential use in Zabbix triggering
-	result.WarningThreshold = threshold
-	result.IsAboveWarning = result.AvailableUpdates > threshold
 
 	return result.AvailableUpdates, nil
 }
@@ -125,15 +113,6 @@ func (h *Handler) GetUpdateDetails(ctx context.Context, metricParams map[string]
 	if err != nil {
 		return nil, errs.Wrap(err, "failed to check APT updates")
 	}
-
-	thresholdStr := metricParams["WarningThreshold"]
-	threshold, err := strconv.Atoi(thresholdStr)
-	if err != nil {
-		threshold = 10 // default
-	}
-
-	result.WarningThreshold = threshold
-	result.IsAboveWarning = result.AvailableUpdates > threshold
 
 	return result, nil
 }

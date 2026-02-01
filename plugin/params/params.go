@@ -21,17 +21,10 @@ package params
 import "golang.zabbix.com/sdk/metric"
 
 const (
-	// WarningThresholdParameterName warning threshold parameter name.
-	WarningThresholdParameterName = "WarningThreshold"
 )
 
 //nolint:gochecknoglobals // global constants.
 var (
 	// Params groups all base parameters for APT updates plugin.
-	Params = []*metric.Param{WarningThreshold}
-
-	// WarningThreshold is the threshold for warning about number of updates.
-	WarningThreshold = metric.NewConnParam(
-		WarningThresholdParameterName, "Number of updates that triggers a warning state.",
-	).WithSession()
+	Params = []*metric.Param{}
 )

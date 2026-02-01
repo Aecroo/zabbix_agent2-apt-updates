@@ -97,10 +97,6 @@ Create triggers to alert when updates are available:
 Trigger name: "Security updates available"
 Expression: {template_name:apt.updates[security].last()}>0
 Severity: Information
-
-Trigger name: "Many security updates available (warning threshold)"
-Expression: {template_name:apt.updates[security].last()}>=10
-Severity: Warning
 ```
 
 ### Updating the Plugin
@@ -281,17 +277,13 @@ Create the following items in your Zabbix template:
 
 ## Configuration
 
-The plugin can be configured using environment variables:
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `WarningThreshold` | 10 | Number of updates that triggers a warning state |
+The plugin requires minimal configuration. The only required setting is the path to the plugin executable.
 
 Example configuration (in `/etc/zabbix/zabbix_agent2.d/apt-updates.conf`):
 ```ini
 # APT Updates Plugin Configuration
-# Warning threshold for number of available updates
-WarningThreshold=5
+# Path to plugin executable
+Plugins.APTUpdates.System.Path=/usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
 ```
 
 ## Testing
