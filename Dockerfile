@@ -14,11 +14,11 @@ RUN apk add --no-cache \
     && mkdir -p /var/lib/zabbix/modules /etc/zabbix/zabbix_agent2.d
 
 # Copy the plugin binary (built separately)
-COPY dist/zabbix-apt-updates-linux-amd64 /usr/local/bin/zabbix-apt-updates
-RUN chmod +x /usr/local/bin/zabbix-apt-updates
+COPY dist/zabbix-agent2-plugin-apt-updates-linux-amd64 /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
+RUN chmod +x /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
 
-# Copy configuration template
-COPY zabbix_agent2.conf.example /etc/zabbix/zabbix_agent2.d/userparameter_apt.conf
+# Copy plugin configuration
+COPY apt-updates.conf /etc/zabbix/zabbix_agent2.d/apt-updates.conf
 
 # Copy documentation
 COPY README.md CHANGELOG.md CONTRIBUTING.md /app/

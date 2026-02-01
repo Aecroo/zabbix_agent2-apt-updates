@@ -5,8 +5,8 @@
 .PHONY: all build clean test dist install uninstall version help
 
 # Project settings
-NAME = zabbix-apt-updates
-VERSION = 1.0.0
+NAME = zabbix-agent2-plugin-apt-updates
+VERSION = 0.2.0
 BUILD_DIR = dist
 GOOS ?= linux
 GOARCH ?= amd64

@@ -37,8 +37,7 @@ services:
     environment:
       - ZBX_SERVER_HOST=zabbix-server
       - ZBX_HOSTNAME=apt-monitor
-      - ZBX_UPDATES_THRESHOLD_WARNING=10
-      # - ZBX_DEBUG=true  # Uncomment for debug output
+      # Warning threshold is now configured in apt-updates.conf
     cap_add:
       - SYS_PTRACE
     security_opt:

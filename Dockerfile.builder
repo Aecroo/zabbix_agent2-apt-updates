@@ -3,12 +3,14 @@
 # This image builds the plugin binary for multiple platforms.
 # Based on official Go image with necessary build tools.
 
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /build
 
 # Copy source files
 COPY . .
+# Copy zabbix_example for SDK replacement
+COPY zabbix_example /build/zabbix_example
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -17,7 +19,10 @@ RUN apk add --no-cache \
     ca-certificates
 
 # Initialize Go module and download dependencies
-RUN go mod download
+RUN sed -i '/replace golang.zabbix.com\/sdk/d' go.mod && \
+    # Download SDK first, then tidy
+    GO111MODULE=on GOPRIVATE=golang.zabbix.com go mod download -x && \
+    go mod tidy
 
 # Build for multiple platforms
 RUN for GOOS in linux; do \
