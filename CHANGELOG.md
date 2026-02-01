@@ -56,23 +56,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Proper exit codes for different error conditions
 - Package name and version extraction from APT output
 
-## [Unreleased]
+## [0.3.0] - 2026-02-01
 
 ### Added
-- Initial implementation of APT updates check for Debian/Ubuntu systems
-- Support for DNF package manager (RHEL/CentOS/Fedora) detection
-- JSON output format with detailed package information
-- Configurable warning threshold via environment variable
-- Debug logging support
-- Comprehensive documentation and examples
+- Support for bracket notation in metric keys: `apt.updates[all]`, `apt.updates[security]`, etc.
+- Three dedicated metrics:
+  - `apt.updates` - Returns count of available updates by type
+  - `apt.updates.list` - Returns JSON list of package names by type
+  - `apt.updates.details` - Returns detailed JSON with versions by type
+- Automatic update type extraction from bracket notation in handlers
 
 ### Changed
-- Initial version following Zabbix plugin conventions
+- **Metric System**: Complete rewrite to use Zabbix SDK's metric parameter system
+- **Configuration**: WarningThreshold now uses string type instead of integer for compatibility
+- **Build System**: Updated Docker builder with Go 1.24 and improved SDK handling
+- **Error Handling**: Enhanced validation and error messages for configuration
 
 ### Fixed
-- Proper handling of apt exit code 100 (no updates available)
-- Correct parsing of APT output format
-- Error handling for missing package managers
+- Type mismatch in WarningThreshold parameter (int → string)
+- JSON unmarshal errors from default values
+- Metric registration to properly handle bracket notation
+- Configuration initialization preventing nil pointer dereference
+
+### Removed
+- Default value for WarningThreshold to avoid JSON marshaling conflicts
 
 ## [1.0.0] - YYYY-MM-DD
 
