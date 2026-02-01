@@ -15,8 +15,6 @@ services:
       dockerfile: Dockerfile.builder
     volumes:
       - ./dist:/output
-    working_dir: /output
-    command: sh -c 'echo "Build complete. Artifacts in dist/" && ls -lh'
 
   # Runtime service - Zabbix Agent 2 with the APT updates plugin
   agent:

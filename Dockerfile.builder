@@ -9,8 +9,6 @@ WORKDIR /build
 
 # Copy source files
 COPY . .
-# Copy zabbix_example for SDK replacement
-COPY zabbix_example /build/zabbix_example
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -40,14 +38,12 @@ RUN for GOOS in linux; do \
             (echo "Build failed for ${GOOS}-${GOARCH}"; exit 1); \
         fi; \
     done; \
-done
+done && ls -lh dist/
 
-# Create distribution package
-RUN mkdir -p /dist && \
-    cp -r dist/* /dist/
+# Files are already in /build/dist from the build step
 
 # Final artifact location
 FROM alpine:latest
 WORKDIR /output
-COPY --from=builder /dist .
+COPY --from=builder /build/dist .
 # Rebuild marker So 1. Feb 03:26:01 UTC 2026
