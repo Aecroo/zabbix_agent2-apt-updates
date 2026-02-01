@@ -1,7 +1,7 @@
 # Zabbix Agent 2 APT Updates Plugin
 
 [![Docker](https://img.shields.io/badge/Docker-Supported-blue)](docker-compose.yml)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue)](CHANGELOG.md)
 
 A monitoring plugin for Zabbix Agent 2 that checks available package updates on Debian/Ubuntu systems using APT.
 
@@ -25,14 +25,14 @@ Download the latest release from our Git repository:
 
 ```bash
 # Create a directory for the plugin
-sudo mkdir -p /usr/local/bin/zabbix-plugins
+sudo mkdir -p /usr/libexec/zabbix/
 
 # Download the binary (Ubuntu/Debian x86_64)
-wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/-/raw/master/dist/zabbix-apt-updates-linux-amd64 \
-  -O /usr/local/bin/zabbix-plugins/zabbix-apt-updates
+wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v0.2.0/zabbix-agent2-plugin-apt-updates-linux-amd64 \
+  -O /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
 
 # Make it executable
-sudo chmod +x /usr/local/bin/zabbix-plugins/zabbix-apt-updates
+sudo chmod +x /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
 ```
 
 ### Step 2: Configure Zabbix Agent 2
@@ -40,18 +40,9 @@ sudo chmod +x /usr/local/bin/zabbix-plugins/zabbix-apt-updates
 Create a configuration file for the plugin:
 
 ```bash
-# Create the config directory if it doesn't exist
-sudo mkdir -p /etc/zabbix/zabbix_agent2.d/
-
-# Create the configuration file
-sudo nano /etc/zabbix/zabbix_agent2.d/userparameter_apt.conf
-```
-
-Paste the following content:
-
-```ini
-# Check for available APT updates
-UserParameter=apt.updates[check],/usr/local/bin/zabbix-plugins/zabbix-apt-updates check
+# Download the configuration file
+wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/-/raw/master/apt-updates.conf \
+  -O /etc/zabbix/zabbix_agent2.d/apt-updates.conf
 ```
 
 Save and exit (Ctrl+O, Enter, Ctrl+X in nano).
@@ -61,20 +52,13 @@ Save and exit (Ctrl+O, Enter, Ctrl+X in nano).
 Before restarting Zabbix Agent, test if the plugin works:
 
 ```bash
-# Run a manual check
-/usr/local/bin/zabbix-plugins/zabbix-apt-updates check
+# Run a manual check (as root or zabbix user)
+sudo -u zabbix /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates --version
 
 # Example output:
-# {
-#   "available_updates": 5,
-#   "package_details_list": [
-#     {"name": "curl", "target_version": "7.81.0-1+b2"},
-#     {"name": "nginx", "target_version": "1.18.0-6ubuntu14.3"}
-#   ],
-#   "warning_threshold": 10,
-#   "is_above_warning": false
-# }
-```
+Zabbix APTUpdates plugin
+Version 0.2.0, built with go1.24.12
+Protocol version 6.4.0
 
 ### Step 4: Restart Zabbix Agent
 
@@ -91,37 +75,31 @@ sudo systemctl restart zabbix-agent2
 3. Go to the **Items** tab
 4. Create a new item with:
    - **Type**: Zabbix Agent (active)
-   - **Key**: `apt.updates[check]`
-   - **Type of information**: Text
+   - **Key**: `apt.updates[security]` or `apt.updates[all]`
+   - **Type of information**: Numeric (float)
 5. Save and wait for data collection
 
 ### Step 6: Set Up Monitoring (Optional)
 
-For better monitoring, create items with preprocessing to extract specific values:
+The plugin supports multiple item keys for different update types:
 
-**Item for update count:**
-- Key: `apt.updates[check]`
-- Preprocessing:
-  - Type: Regular expression
-  - Pattern: `"available_updates": ([0-9]*)`
-  - Custom on fail: Discard value
-  - Result: `\1`
-
-**Item for warning status:**
-- Key: `apt.updates[check]`
-- Preprocessing:
-  - Type: Regular expression
-  - Pattern: `"is_above_warning": (true|false)`
-  - Custom on fail: Discard value
-  - Result: `\1`
+**Item Keys:**
+- `apt.updates[security]` - Count of security updates available
+- `apt.updates[all]` - Count of all updates available
+- `apt.updates[recommended]` - Count of recommended updates available
+- `apt.updates[optional]` - Count of optional updates available
 
 ### Step 7: Create Triggers (Optional)
 
 Create triggers to alert when updates are available:
 
 ```
-Trigger name: "Many APT updates available"
-Expression: {template_name:apt.updates[check].str(Warning).regexp("true")}=1
+Trigger name: "Security updates available"
+Expression: {template_name:apt.updates[security].last()}>0
+Severity: Information
+
+Trigger name: "Many security updates available (warning threshold)"
+Expression: {template_name:apt.updates[security].last()}>=10
 Severity: Warning
 ```
 
@@ -131,8 +109,8 @@ When new versions are released, simply download and replace the binary:
 
 ```bash
 # Download the new version
-sudo wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/-/raw/master/dist/zabbix-apt-updates-linux-amd64 \
-  -O /usr/local/bin/zabbix-plugins/zabbix-apt-updates
+sudo wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v0.2.0/zabbix-agent2-plugin-apt-updates-linux-amd64 \
+  -O /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
 
 # Restart Zabbix Agent
 sudo systemctl restart zabbix-agent2
@@ -141,11 +119,12 @@ sudo systemctl restart zabbix-agent2
 ### Troubleshooting for Normal Users
 
 **Problem**: Plugin returns "command not found" error
-- **Solution**: Ensure the binary is in `/usr/local/bin/zabbix-plugins/` and has execute permissions
+- **Solution**: Ensure the binary is in `/usr/libexec/zabbix/` and has execute permissions
 
 **Problem**: Zabbix shows "Not supported" for the item
 - **Solution**: Check if Zabbix Agent 2 is running: `sudo systemctl status zabbix-agent2`
-- Verify the configuration file exists in `/etc/zabbix/zabbix_agent2.d/`
+- Verify the configuration file exists in `/etc/zabbix/zabbix_agent2.d/apt-updates.conf`
+- Ensure the plugin binary has proper permissions for the zabbix user
 
 **Problem**: Plugin returns error about apt command
 - **Solution**: Run `sudo apt update` first to refresh package lists
@@ -160,10 +139,10 @@ To remove the plugin:
 
 ```bash
 # Remove the binary
-sudo rm /usr/local/bin/zabbix-plugins/zabbix-apt-updates
+sudo rm /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
 
 # Remove the configuration file
-sudo rm /etc/zabbix/zabbix_agent2.d/userparameter_apt.conf
+sudo rm /etc/zabbix/zabbix_agent2.d/apt-updates.conf
 
 # Restart Zabbix Agent
 sudo systemctl restart zabbix-agent2
@@ -173,11 +152,23 @@ sudo systemctl restart zabbix-agent2
 
 ```
 zabbix_agent2-apt-updates/
-├── main.go                 # Main entry point
-├── apt_updates_check.go    # APT update detection logic
+├── main.go                 # Main plugin entry point
 ├── go.mod                  # Go module definition
 ├── go.sum                  # Go dependencies checksums
+├── apt-updates.conf        # Plugin configuration file
+├── plugin/                 # Official Zabbix Go plugin implementation
+│   ├── config.go           # Configuration management
+│   ├── handlers/          # Metric collection logic
+│   │   └── handlers.go
+│   ├── params/            # Parameter definitions
+│   │   └── params.go
+│   └── plugin.go           # Plugin registration and entry point
+├── packages/              # Pre-built binaries for v0.2.0
+│   ├── zabbix-agent2-plugin-apt-updates-linux-amd64
+│   ├── zabbix-agent2-plugin-apt-updates-linux-arm64
+│   └── zabbix-agent2-plugin-apt-updates-linux-armv7
 ├── README.md               # This file
+├── CHANGELOG.md            # Version history
 └── .gitignore              # Files to ignore in version control
 ```
 
@@ -209,28 +200,29 @@ ls -lh dist/
 If you have Go installed, you can build natively:
 
 ```bash
-# Clone the repository
-git clone http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates.git
+# Clone the repository (including zabbix_example submodule)
+git clone --recursive http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates.git
 cd zabbix-agent2-apt-updates
 
-# Initialize Go module (if not already done)
-go mod init github.com/netdata/zabbix-agent-apt-updates
+# Build for current platform (Linux AMD64)
+make build
 
-# Build the binary
-go build -o dist/zabbix-apt-updates
+# Artifacts will be in the packages/ directory
 ```
 
-### Cross-compilation
 ### Cross-compilation
 
 To build for different platforms:
 
 ```bash
 # Linux AMD64 (default)
-GOOS=linux GOARCH=amd64 go build -o dist/zabbix-apt-updates-linux-amd64
+make GOOS=linux GOARCH=amd64 build
 
 # Linux ARM64
-GOOS=linux GOARCH=arm64 go build -o dist/zabbix-apt-updates-linux-arm64
+make GOOS=linux GOARCH=arm64 build
+
+# Linux ARMv7
+make GOOS=linux GOARCH=arm GOARM=7 build
 ```
 
 ## Deployment
@@ -238,23 +230,25 @@ GOOS=linux GOARCH=arm64 go build -o dist/zabbix-apt-updates-linux-arm64
 ### Method 1: Direct Execution (for testing)
 
 ```bash
-./dist/zabbix-apt-updates --help
+/usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates --help
 ```
 
 ### Method 2: Integration with Zabbix Agent 2
 
-1. Place the binary in a location accessible by Zabbix Agent:
+The plugin is automatically detected by Zabbix Agent 2 when placed in the correct location:
+
+1. Place the binary in the Zabbix plugin directory:
    ```bash
-   sudo cp dist/zabbix-apt-updates /usr/local/bin/
-   sudo chmod +x /usr/local/bin/zabbix-apt-updates
+   sudo cp packages/zabbix-agent2-plugin-apt-updates-linux-amd64 \
+       /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
+   sudo chmod +x /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
    ```
 
 2. Configure Zabbix Agent to use the plugin:
 
-   Edit `/etc/zabbix/zabbix_agent2.d/userparameter_apt.conf`:
-   ```ini
-   # Check for available APT updates
-   UserParameter=apt.updates[*],/usr/local/bin/zabbix-apt-updates check $1
+   Copy the configuration file:
+   ```bash
+   sudo cp apt-updates.conf /etc/zabbix/zabbix_agent2.d/apt-updates.conf
    ```
 
 3. Restart Zabbix Agent:
@@ -267,11 +261,11 @@ GOOS=linux GOARCH=arm64 go build -o dist/zabbix-apt-updates-linux-arm64
 ### Command Line
 
 ```bash
-# Get available updates count
-./zabbix-apt-updates check
+# Get version information
+/usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates --version
 
-# Example output (JSON format):
-# {"available_updates": 5, "package_details_list": [{"name":"curl","current_version":"7.81.0-1","target":"7.81.0-1+b2"}]}
+# Get help
+/usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates --help
 ```
 
 ### Zabbix Items
@@ -280,23 +274,24 @@ Create the following items in your Zabbix template:
 
 | Item Key | Type | Description |
 |----------|------|-------------|
-| `apt.updates[available]` | Zabbix Agent | Returns count of available updates |
-| `apt.updates[details]` | Zabbix Agent | Returns detailed JSON with package information |
+| `apt.updates[security]` | Zabbix Agent (active) | Returns count of security updates available |
+| `apt.updates[all]` | Zabbix Agent (active) | Returns count of all updates available |
+| `apt.updates[recommended]` | Zabbix Agent (active) | Returns count of recommended updates available |
+| `apt.updates[optional]` | Zabbix Agent (active) | Returns count of optional updates available |
 
 ## Configuration
 
 The plugin can be configured using environment variables:
 
-| Environment Variable | Default | Description |
-|----------------------|---------|-------------|
-| `ZBX_UPDATES_THRESHOLD_WARNING` | 10 | Warning threshold for number of available updates |
-| `ZBX_DEBUG` | false | Enable debug logging |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `WarningThreshold` | 10 | Number of updates that triggers a warning state |
 
-Example:
-```bash
-export ZBX_UPDATES_THRESHOLD_WARNING=5
-export ZBX_DEBUG=true
-./zabbix-apt-updates check
+Example configuration (in `/etc/zabbix/zabbix_agent2.d/apt-updates.conf`):
+```ini
+# APT Updates Plugin Configuration
+# Warning threshold for number of available updates
+WarningThreshold=5
 ```
 
 ## Testing

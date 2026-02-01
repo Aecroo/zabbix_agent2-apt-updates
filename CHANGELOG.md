@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-02-01
+
+### Added
+- Official Zabbix Agent 2 Go plugin architecture (converted from userparameter style)
+- Dedicated item key: `apt.updates[<package_state>]` for precise monitoring
+- Zabbix SDK integration with proper metric parameter system
+- Configurable warning threshold via configuration file (`apt-updates.conf`)
+- Enhanced error handling and logging integration with Zabbix Agent 2
+- Plugin configuration file with official Zabbix format
+- Comprehensive conversion documentation and migration guides
+
+### Changed
+- **Architecture**: Complete refactor from userparameter script to official Go plugin
+- **Build System**: Updated Docker-based build system for Go plugins with GOPRIVATE support
+- **Configuration**: Moved from environment variables to proper Zabbix configuration file
+- **Binary Naming**: Updated to `zabbix-agent2-plugin-apt-updates-linux-*` format
+- **Plugin Structure**: Organized into proper Go package structure (plugin/, plugin/config.go, etc.)
+
+### Fixed
+- Invalid SDK version in go.mod (v0.0.0-00010101000000-000000000000 → v1.2.2-0.20251205121637-3b95c058c0e4)
+- Malformed go.sum file (deleted and regenerated)
+- Type mismatch in params.go: WithDefault(10) → WithDefault("10") (integer → string)
+
+### Removed
+- Environment variable configuration (replaced with apt-updates.conf)
+- Legacy userparameter-style execution model
+
 ## [0.1.0] - 2026-01-31
 
 ### Added
