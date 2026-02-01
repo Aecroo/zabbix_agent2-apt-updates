@@ -25,7 +25,7 @@ import (
 )
 
 type session struct {
-	WarningThreshold int `conf:"optional,range=0:1000"`
+	WarningThreshold string `conf:"optional"`
 }
 
 type pluginConfig struct {

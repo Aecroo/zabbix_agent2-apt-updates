@@ -50,3 +50,4 @@ RUN mkdir -p /dist && \
 FROM alpine:latest
 WORKDIR /output
 COPY --from=builder /dist .
+# Rebuild marker So 1. Feb 03:26:01 UTC 2026

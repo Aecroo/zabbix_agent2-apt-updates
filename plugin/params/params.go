@@ -33,5 +33,5 @@ var (
 	// WarningThreshold is the threshold for warning about number of updates.
 	WarningThreshold = metric.NewConnParam(
 		WarningThresholdParameterName, "Number of updates that triggers a warning state.",
-	).WithSession().WithDefault("10")
+	).WithSession()
 )

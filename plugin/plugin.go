@@ -36,12 +36,9 @@ const (
 	// Name of the plugin.
 	Name = "APTUpdates"
 
-	countAllMetric        = aptMetricKey("apt.updates[all]")
-	countSecurityMetric   = aptMetricKey("apt.updates[security]")
-	countRecommendedMetric = aptMetricKey("apt.updates[recommended]")
-	countOptionalMetric   = aptMetricKey("apt.updates[optional]")
-	listMetric             = aptMetricKey("apt.updates.list")
-	detailsMetric          = aptMetricKey("apt.updates.details")
+	countMetric    = aptMetricKey("apt.updates")
+	listMetric     = aptMetricKey("apt.updates.list")
+	detailsMetric  = aptMetricKey("apt.updates.details")
 )
 
 var (
@@ -74,6 +71,12 @@ func New() (*APTUpdatesPlugin, error) {
 	}
 
 	p.Logger = log.New(Name)
+
+	// Initialize config with defaults
+	p.config = &pluginConfig{
+		Sessions: make(map[string]session),
+		Default: session{},
+	}
 
 	err = p.registerMetrics()
 	if err != nil {
@@ -146,33 +149,9 @@ func (p *APTUpdatesPlugin) registerMetrics() error {
 	handler := handlers.New()
 
 	p.metrics = map[aptMetricKey]*aptMetric{
-		countAllMetric: {
+		countMetric: {
 			metric: metric.New(
-				"Returns the number of available APT updates (all types).",
-				params.Params,
-				false, // Not text
-			),
-			handler: handler.CheckUpdateCount,
-		},
-		countSecurityMetric: {
-			metric: metric.New(
-				"Returns the number of security updates available.",
-				params.Params,
-				false, // Not text
-			),
-			handler: handler.CheckUpdateCount,
-		},
-		countRecommendedMetric: {
-			metric: metric.New(
-				"Returns the number of recommended updates available.",
-				params.Params,
-				false, // Not text
-			),
-			handler: handler.CheckUpdateCount,
-		},
-		countOptionalMetric: {
-			metric: metric.New(
-				"Returns the number of optional updates available.",
+				"Returns the number of available APT updates. Use apt.updates[all], apt.updates[security], apt.updates[recommended], or apt.updates[optional] to specify update type.",
 				params.Params,
 				false, // Not text
 			),
@@ -180,7 +159,7 @@ func (p *APTUpdatesPlugin) registerMetrics() error {
 		},
 		listMetric: {
 			metric: metric.New(
-				"Returns a list of package names with available APT updates.",
+				"Returns a list of package names with available APT updates. Use apt.updates.list[all], apt.updates.list[security], etc. to specify update type.",
 				params.Params,
 				true, // Text output
 			),
@@ -188,7 +167,7 @@ func (p *APTUpdatesPlugin) registerMetrics() error {
 		},
 		detailsMetric: {
 			metric: metric.New(
-				"Returns detailed information about available APT updates including versions.",
+				"Returns detailed information about available APT updates including versions. Use apt.updates.details[all], apt.updates.details[security], etc. to specify update type.",
 				params.Params,
 				true, // Text output
 			),
