@@ -72,7 +72,6 @@ Create `/etc/zabbix/zabbix_agent2.d/apt-updates.conf`:
 ```ini
 # APT Updates Plugin Configuration
 Plugins.APTUpdates.System.Path=/usr/local/bin/zabbix-agent2-plugin-apt-updates-linux-amd64
-WarningThreshold=5
 ```
 
 ## Testing Results
@@ -94,7 +93,7 @@ All tests passed successfully:
 
 # Test details metric with brackets
 /tmp/zabbix-agent2-plugin-apt-updates -t 'apt.updates.details[all]'
-# Result: {"available_updates":0,"warning_threshold":10}
+# Result: {"available_updates":0}
 ```
 
 ## Build Information

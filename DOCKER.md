@@ -86,7 +86,6 @@ services:
     environment:
       - ZBX_SERVER_HOST=your-zabbix-server.example.com
       - ZBX_HOSTNAME=monitoring-host-01
-      - ZBX_UPDATES_THRESHOLD_WARNING=5
       # - ZBX_DEBUG=true  # Uncomment for debug output
 ```
 
@@ -122,7 +121,6 @@ docker run -d \
   -v /etc/apt:/etc/apt:ro \
   -e ZBX_SERVER_HOST=zabbix.example.com \
   -e ZBX_HOSTNAME=production-server-01 \
-  -e ZBX_UPDATES_THRESHOLD_WARNING=10 \
   zabbix-apt-updates
 ```
 
@@ -149,7 +147,6 @@ go test -v ./...
 |----------|---------|-------------|
 | `ZBX_SERVER_HOST` | (required) | Hostname or IP of Zabbix server/proxy |
 | `ZBX_HOSTNAME` | (required) | Unique hostname for this agent |
-| `ZBX_UPDATES_THRESHOLD_WARNING` | 10 | Number of updates that triggers warning |
 | `ZBX_DEBUG` | false | Enable debug logging |
 
 ### Volumes
