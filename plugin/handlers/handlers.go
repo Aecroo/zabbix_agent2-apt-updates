@@ -89,8 +89,12 @@ type CheckResult struct {
 	PackageDetailsList   []UpdateInfo `json:"package_details_list,omitempty"`
 }
 
+type commandExecutor interface {
+	execute(ctx context.Context, name string, args ...string) ([]byte, error)
+}
+
 type systemCalls interface {
-	execCommand(context.Context, string, ...string) *exec.Cmd
+	execCommand(ctx context.Context, name string, args ...string) ([]byte, error)
 }
 
 type osWrapper struct{}
@@ -254,8 +258,7 @@ func (h *Handler) isPackageOfType(ctx context.Context, pkgName string, updateTyp
 	switch updateType {
 	case UpdateTypeSecurity:
 		// Check if package comes from security repository
-		cmd := h.sysCalls.execCommand(ctx, "apt-cache", "policy", pkgName)
-		output, err := cmd.CombinedOutput()
+		output, err := h.sysCalls.execCommand(ctx, "apt-cache", "policy", pkgName)
 		if err != nil {
 			return false, fmt.Errorf("failed to check policy for %s: %w", pkgName, err)
 		}
@@ -277,8 +280,7 @@ func (h *Handler) isPackageOfType(ctx context.Context, pkgName string, updateTyp
 
 	case UpdateTypeOptional:
 		// Optional packages - these would be from universe/multiverse
-		cmd := h.sysCalls.execCommand(ctx, "apt-cache", "policy", pkgName)
-		output, err := cmd.CombinedOutput()
+		output, err := h.sysCalls.execCommand(ctx, "apt-cache", "policy", pkgName)
 		if err != nil {
 			return false, fmt.Errorf("failed to check policy for %s: %w", pkgName, err)
 		}
@@ -293,11 +295,10 @@ func (h *Handler) isPackageOfType(ctx context.Context, pkgName string, updateTyp
 	}
 }
 
-// checkAPTUpdates executes 'apt list --upgradable' and parses the output
+// checkAPTUpdates executes 'apt-get -s dist-upgrade' and parses the output
+// This method provides cleaner version strings without trailing brackets compared to 'apt list --upgradable'
 func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*CheckResult, error) {
-	cmd := h.sysCalls.execCommand(ctx, "apt", "list", "--upgradable")
-
-	output, err := cmd.CombinedOutput()
+	output, err := h.sysCalls.execCommand(ctx, "apt-get", "-s", "dist-upgrade")
 	if err != nil {
 		// Check if apt command exists
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -309,7 +310,7 @@ func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*
 				}, nil
 			}
 		}
-		return nil, fmt.Errorf("failed to execute apt list: %w", err)
+		return nil, fmt.Errorf("failed to execute apt-get dist-upgrade: %w", err)
 	}
 
 	// Parse the output
@@ -318,43 +319,54 @@ func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if line == "" || !strings.Contains(line, "/") {
+		if line == "" {
 			continue
 		}
 
-		// Parse format: package/state version
-		parts := strings.Fields(line)
-		if len(parts) < 2 {
-			continue
-		}
+		// Look for lines like: "Inst libfoo [version] [options]"
+		// We want to extract the package name and target version
+		if strings.HasPrefix(line, "Inst") || strings.HasPrefix(line, "Conf") {
+			parts := strings.Fields(line)
+			if len(parts) < 2 {
+				continue
+			}
 
-		// Extract package name (before /)
-		pkgParts := strings.Split(parts[0], "/")
-		if len(pkgParts) < 1 {
-			continue
-		}
+			pkgName := parts[1] // Package name is the second field after "Inst" or "Conf"
 
-		pkgName := pkgParts[0]
-		version := parts[len(parts)-1] // Last field is the version
+			// Find the target version - it's in brackets after the package name
+			// Format: Inst <package> [new-version] ...
+			versionStart := strings.Index(line, "[")
+			if versionStart == -1 {
+				continue
+			}
+			versionEnd := strings.Index(line[versionStart+1:], "]")
+			if versionEnd == -1 {
+				continue
+			}
+			versionEnd += versionStart + 1 // Adjust for substring
 
-		// Filter by update type if needed
-		if updateType != UpdateTypeAll && updateType != "" {
-			isMatch, err := h.isPackageOfType(ctx, pkgName, updateType)
-			if err != nil {
-				// If we can't determine the type, skip this package for filtered queries
-				if updateType != UpdateTypeAll {
+			// Extract version between brackets
+			version := strings.TrimSpace(line[versionStart+1 : versionEnd])
+
+			// Filter by update type if needed
+			if updateType != UpdateTypeAll && updateType != "" {
+				isMatch, err := h.isPackageOfType(ctx, pkgName, updateType)
+				if err != nil {
+					// If we can't determine the type, skip this package for filtered queries
+					if updateType != UpdateTypeAll {
+						continue
+					}
+				}
+				if !isMatch {
 					continue
 				}
 			}
-			if !isMatch {
-				continue
-			}
-		}
 
-		updates = append(updates, UpdateInfo{
-			Name:   pkgName,
-			Target: version,
-		})
+			updates = append(updates, UpdateInfo{
+				Name:   pkgName,
+				Target: version,
+			})
+		}
 	}
 
 	result := &CheckResult{
@@ -365,6 +377,7 @@ func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*
 	return result, nil
 }
 
-func (osWrapper) execCommand(ctx context.Context, name string, args ...string) *exec.Cmd {
-	return exec.CommandContext(ctx, name, args...)
+func (osWrapper) execCommand(ctx context.Context, name string, args ...string) ([]byte, error) {
+	cmd := exec.CommandContext(ctx, name, args...)
+	return cmd.CombinedOutput()
 }
