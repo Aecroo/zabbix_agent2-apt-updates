@@ -40,10 +40,7 @@ RUN for GOOS in linux; do \
     done; \
 done && ls -lh dist/
 
-# Files are already in /build/dist from the build step
+# Copy files to output directory for volume mount
+RUN mkdir -p /output && cp -v dist/* /output/ || true
 
-# Final artifact location
-FROM alpine:latest
-WORKDIR /output
-COPY --from=builder /build/dist .
-# Rebuild marker So 1. Feb 03:26:01 UTC 2026
+# Files are now in /output from the copy step
