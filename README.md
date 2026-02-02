@@ -1,7 +1,7 @@
 # Zabbix Agent 2 APT Updates Plugin
 
 [![Docker](https://img.shields.io/badge/Docker-Supported-blue)](docker-compose.yml)
-[![Version](https://img.shields.io/badge/version-0.5.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.1-blue)](CHANGELOG.md)
 
 A monitoring plugin for Zabbix Agent 2 that checks available package updates on Debian/Ubuntu systems using APT.
 
@@ -28,7 +28,7 @@ Download the latest release from our Git repository:
 sudo mkdir -p /usr/libexec/zabbix/
 
 # Download the binary (Ubuntu/Debian x86_64)
-wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v0.5.0/zabbix-agent2-plugin-apt-updates-linux-amd64 \
+wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v0.5.1/zabbix-agent2-plugin-apt-updates-linux-amd64 \
   -O /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
 
 # Make it executable
@@ -135,7 +135,7 @@ When new versions are released, simply download and replace the binary:
 
 ```bash
 # Download the new version
-sudo wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v0.5.0/zabbix-agent2-plugin-apt-updates-linux-amd64 \
+sudo wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v0.5.1/zabbix-agent2-plugin-apt-updates-linux-amd64 \
   -O /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
 
 # Restart Zabbix Agent
