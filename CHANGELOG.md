@@ -27,6 +27,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Issue #7 - Version parsing with trailing brackets**: Fixed version string parsing to remove trailing ']' characters from target_version field. The issue was caused by using `apt list --upgradable` which outputs versions in a format like "package/state version]". Switched to using `apt-get -s dist-upgrade` which provides cleaner output format and properly extracts versions between brackets.
+
+### Added
+- Comprehensive test suite for version parsing with multiple test cases:
+  - Normal apt-get dist-upgrade output
+  - No upgrades available scenario
+  - Edge case handling with brackets in package names
+  - Empty output handling
+- Refactored systemCalls interface to return ([]byte, error) instead of *exec.Cmd for better testability
+
+### Changed
+- **APT command**: Switched from `apt list --upgradable` to `apt-get -s dist-upgrade`
+- **Version parsing logic**: Completely rewrote parser to handle "Inst <package> [version]" format instead of "package/state version]" format
+- **Code structure**: Improved separation of concerns with better interface design for testing
+
 ## [0.4.1] - 2026-02-01
 
 ### Fixed
