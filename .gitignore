@@ -37,3 +37,7 @@ DOCKER.md
 
 # Local configuration files
 .zabbix-agent2.conf
+
+# Documentation templates
+RELEASE_GUIDE.md
+v0.6.0_SUMMARY.md
