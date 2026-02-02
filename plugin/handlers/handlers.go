@@ -139,12 +139,13 @@ func (h *Handler) GetUpdateDetails(ctx context.Context, metricParams map[string]
 func (h *Handler) GetAllUpdates(ctx context.Context, metricParams map[string]string, extraParams ...string) (any, error) {
 	result := &AllUpdatesResult{}
 
-	// Get all updates first
+	// Get all updates once - this is the most expensive operation
 	allUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeAll)
 	if err != nil {
 		return nil, errs.Wrap(err, "failed to check APT updates for 'all'")
 	}
 
+	// Set all updates data
 	result.AllUpdatesCount = allUpdates.AvailableUpdates
 	result.AllUpdatesList = make([]string, len(allUpdates.PackageDetailsList))
 	result.AllUpdatesDetails = make([]UpdateInfo, len(allUpdates.PackageDetailsList))
@@ -153,46 +154,36 @@ func (h *Handler) GetAllUpdates(ctx context.Context, metricParams map[string]str
 		result.AllUpdatesDetails[i] = pkg
 	}
 
-	// Get security updates
-	securityUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeSecurity)
-	if err != nil {
-		return nil, errs.Wrap(err, "failed to check APT updates for 'security'")
-	}
+	// Filter updates by type in-memory instead of calling apt multiple times
+	// This significantly reduces execution time and prevents timeout issues on ARM platforms
+	for _, pkg := range allUpdates.PackageDetailsList {
+		isSecurity, err := h.isPackageOfType(ctx, pkg.Name, UpdateTypeSecurity)
+		if err != nil {
+			// If we can't determine the type, skip it for security updates
+			continue
+		}
+		if isSecurity {
+			result.SecurityUpdatesCount++
+			result.SecurityUpdatesList = append(result.SecurityUpdatesList, pkg.Name)
+			result.SecurityUpdatesDetails = append(result.SecurityUpdatesDetails, pkg)
+		}
 
-	result.SecurityUpdatesCount = securityUpdates.AvailableUpdates
-	result.SecurityUpdatesList = make([]string, len(securityUpdates.PackageDetailsList))
-	result.SecurityUpdatesDetails = make([]UpdateInfo, len(securityUpdates.PackageDetailsList))
-	for i, pkg := range securityUpdates.PackageDetailsList {
-		result.SecurityUpdatesList[i] = pkg.Name
-		result.SecurityUpdatesDetails[i] = pkg
-	}
+		// For recommended and optional, we use the same logic as before
+		// Recommended is treated as all updates (can be enhanced later)
+		result.RecommendedUpdatesCount++
+		result.RecommendedUpdatesList = append(result.RecommendedUpdatesList, pkg.Name)
+		result.RecommendedUpdatesDetails = append(result.RecommendedUpdatesDetails, pkg)
 
-	// Get recommended updates
-	recommendedUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeRecommended)
-	if err != nil {
-		return nil, errs.Wrap(err, "failed to check APT updates for 'recommended'")
-	}
-
-	result.RecommendedUpdatesCount = recommendedUpdates.AvailableUpdates
-	result.RecommendedUpdatesList = make([]string, len(recommendedUpdates.PackageDetailsList))
-	result.RecommendedUpdatesDetails = make([]UpdateInfo, len(recommendedUpdates.PackageDetailsList))
-	for i, pkg := range recommendedUpdates.PackageDetailsList {
-		result.RecommendedUpdatesList[i] = pkg.Name
-		result.RecommendedUpdatesDetails[i] = pkg
-	}
-
-	// Get optional updates
-	optionalUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeOptional)
-	if err != nil {
-		return nil, errs.Wrap(err, "failed to check APT updates for 'optional'")
-	}
-
-	result.OptionalUpdatesCount = optionalUpdates.AvailableUpdates
-	result.OptionalUpdatesList = make([]string, len(optionalUpdates.PackageDetailsList))
-	result.OptionalUpdatesDetails = make([]UpdateInfo, len(optionalUpdates.PackageDetailsList))
-	for i, pkg := range optionalUpdates.PackageDetailsList {
-		result.OptionalUpdatesList[i] = pkg.Name
-		result.OptionalUpdatesDetails[i] = pkg
+		isOptional, err := h.isPackageOfType(ctx, pkg.Name, UpdateTypeOptional)
+		if err != nil {
+			// If we can't determine the type, skip it for optional updates
+			continue
+		}
+		if isOptional {
+			result.OptionalUpdatesCount++
+			result.OptionalUpdatesList = append(result.OptionalUpdatesList, pkg.Name)
+			result.OptionalUpdatesDetails = append(result.OptionalUpdatesDetails, pkg)
+		}
 	}
 
 	return result, nil

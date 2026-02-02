@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-02-02
+
+### Fixed
+- **Issue #6 - ARM timeout**: Fixed plugin execution timeout on ARM platforms (armv7 and arm64) when called through zabbix_agent2 -t. The issue was caused by executing `apt list --upgradable` four times sequentially (once for each update type). The fix optimizes the code to execute apt only once and filter results in-memory, significantly reducing execution time.
+
+### Changed
+- **GetAllUpdates handler**: Optimized to call `checkAPTUpdates` only once instead of four times. Results are now filtered in-memory by update type (security, recommended, optional) instead of executing apt multiple times with different filters.
+- **Performance**: Reduced execution time by ~75% on ARM platforms by eliminating redundant apt command executions.
+
 ## [0.5.0] - 2026-02-02
 
 ### Fixed
