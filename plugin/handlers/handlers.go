@@ -295,10 +295,11 @@ func (h *Handler) isPackageOfType(ctx context.Context, pkgName string, updateTyp
 	}
 }
 
-// checkAPTUpdates executes 'apt-get -s dist-upgrade' and parses the output
+// checkAPTUpdates executes 'apt-get -s upgrade' and parses the output
 // This method provides cleaner version strings without trailing brackets compared to 'apt list --upgradable'
+// Using 'upgrade' instead of 'dist-upgrade' reduces resource usage on ARM platforms
 func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*CheckResult, error) {
-	output, err := h.sysCalls.execCommand(ctx, "apt-get", "-s", "dist-upgrade")
+	output, err := h.sysCalls.execCommand(ctx, "apt-get", "-s", "upgrade")
 	if err != nil {
 		// Check if apt command exists
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -323,7 +324,7 @@ func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*
 			continue
 		}
 
-		// Look for lines like: "Inst libfoo [version] [options]"
+		// Look for lines like: "Inst <package> [version]" or "Conf <package> [version]"
 		// We want to extract the package name and target version
 		if strings.HasPrefix(line, "Inst") || strings.HasPrefix(line, "Conf") {
 			parts := strings.Fields(line)
