@@ -30,7 +30,9 @@ type session struct {
 type pluginConfig struct {
 	System plugin.SystemOptions `conf:"optional"` //nolint:staticcheck
 	// Timeout.
-	Timeout int `conf:"optional,range=1:30"`
+	// Note: With Zabbix 7.0+, timeout can be configured at the item level (1-600 seconds).
+	// This configuration option is maintained for backwards compatibility and defaults to global timeout.
+	Timeout int `conf:"optional"`
 	// Sessions stores pre-defined named sets of connection settings.
 	Sessions map[string]session `conf:"optional"`
 	// Default stores default parameter values from configuration file.

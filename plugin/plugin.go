@@ -128,6 +128,10 @@ func (p *APTUpdatesPlugin) Export(key string, rawParams []string, _ plugin.Conte
 		return nil, errs.Wrap(err, "failed to set default params")
 	}
 
+	// Create context with timeout.
+	// Note: With Zabbix 7.0+, the timeout can be configured at the item level (1-600 seconds),
+	// which will override this plugin-level setting. This provides more granular control over
+	// timeouts for different monitoring items.
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
 		time.Duration(p.config.Timeout)*time.Second,

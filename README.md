@@ -306,11 +306,19 @@ Create the following items in your Zabbix template:
 
 The plugin requires minimal configuration. The only required setting is the path to the plugin executable.
 
+### Timeout Configuration
+
+**Important:** With Zabbix Agent 2 version 7.0 and later, timeout can be configured directly in the item settings with a range of 1-600 seconds (10 minutes). This provides more granular control over timeouts for different monitoring items.
+
+For older versions or as a fallback when not specified at the item level, you can configure a plugin-level timeout:
+
 Example configuration (in `/etc/zabbix/zabbix_agent2.d/apt-updates.conf`):
 ```ini
 # APT Updates Plugin Configuration
 # Path to plugin executable
 Plugins.APTUpdates.System.Path=/usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
+# Optional: Plugin-level timeout (used as fallback for older Zabbix versions)
+# Plugins.APTUpdates.Timeout=30
 ```
 
 ## Testing
