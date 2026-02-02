@@ -5,9 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.1] - 2026-02-02
+## [Unreleased]
+
+## [0.6.0] - 2026-02-02
 
 ### Fixed
+- **Issue #8 - ARM platform timeout (revised)**: Fixed plugin execution on ARM platforms (arm64 and armv7) where the plugin was getting killed with "signal: killed" error. The issue persisted even after switching to `apt-get -s upgrade`. Final solution: switched back to using `apt list --upgradable` with improved parsing logic that properly extracts version strings without trailing brackets. This approach is lightweight enough to avoid OOM kills on ARM while maintaining clean version output.
+- **Issue #7 - Version parsing with trailing brackets**: Fixed version string parsing to remove trailing ']' characters from target_version field. The parser now properly handles the `apt list --upgradable` format ("package/state version]") by extracting the last field and removing the trailing bracket character.
+
+### Added
+- Comprehensive test suite for version parsing with multiple test cases:
+  - Normal apt list --upgradable output
+  - No upgrades available scenario
+  - Edge case handling with brackets in package names
+  - Empty output handling
+- Refactored systemCalls interface to return ([]byte, error) instead of *exec.Cmd for better testability
+
+### Changed
+- **APT command**: Switched from `apt-get -s upgrade` back to `apt list --upgradable`
+- **Version parsing logic**: Rewrote parser to handle "package/state version]" format by extracting the last field and removing trailing ']' character
+- **Code structure**: Improved separation of concerns with better interface design for testing
+
+## [0.5.1] - 2026-02-02
 - **Issue #6 - ARM timeout**: Fixed plugin execution timeout on ARM platforms (armv7 and arm64) when called through zabbix_agent2 -t. The issue was caused by executing `apt list --upgradable` four times sequentially (once for each update type). The fix optimizes the code to execute apt only once and filter results in-memory, significantly reducing execution time.
 
 ### Changed
@@ -24,10 +43,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **API Design**: Simplified from multiple item keys with bracket notation to one item key with JSONPath-based value extraction
 - **Handler Functions**: Removed individual handlers for count/list/details and consolidated into `GetAllUpdates` handler
 - **Timeout Configuration**: Removed hardcoded timeout range restriction (1-30 seconds). With Zabbix 7.0+, timeout can be configured at the item level with a range of 1-600 seconds (10 minutes). Plugin-level timeout configuration is maintained for backwards compatibility.
-
-## [Unreleased]
-
-### Fixed
 - **Issue #8 - ARM platform timeout (revised)**: Fixed plugin execution on ARM platforms (arm64 and armv7) where the plugin was getting killed with "signal: killed" error. The issue persisted even after switching to `apt-get -s upgrade`. Final solution: switched back to using `apt list --upgradable` with improved parsing logic that properly extracts version strings without trailing brackets. This approach is lightweight enough to avoid OOM kills on ARM while maintaining clean version output.
 - **Issue #7 - Version parsing with trailing brackets**: Fixed version string parsing to remove trailing ']' characters from target_version field. The parser now properly handles the `apt list --upgradable` format ("package/state version]") by extracting the last field and removing the trailing bracket character.
 
