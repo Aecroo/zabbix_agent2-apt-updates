@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.0] - 2026-02-02
 
 ### Fixed
 - **Issue #5 - Duplicate item values**: Simplified the plugin to use a single item key `updates.get` that returns comprehensive JSON data with all update types (security, recommended, optional, all). Users can now extract specific values using Zabbix JSONPath preprocessing instead of having multiple item keys that returned duplicate data.
@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **API Design**: Simplified from multiple item keys with bracket notation to one item key with JSONPath-based value extraction
 - **Handler Functions**: Removed individual handlers for count/list/details and consolidated into `GetAllUpdates` handler
 - **Timeout Configuration**: Removed hardcoded timeout range restriction (1-30 seconds). With Zabbix 7.0+, timeout can be configured at the item level with a range of 1-600 seconds (10 minutes). Plugin-level timeout configuration is maintained for backwards compatibility.
+
+## [Unreleased]
 
 ## [0.4.1] - 2026-02-01
 
