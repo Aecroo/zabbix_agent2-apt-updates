@@ -28,20 +28,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- **Issue #8 - ARM platform timeout**: Fixed plugin execution on ARM platforms (arm64 and armv7) where the plugin was getting killed with "signal: killed" error. The issue was caused by using `apt-get -s dist-upgrade` which is resource-intensive on ARM systems. Switched to using `apt-get -s upgrade` which provides similar output but with lower resource usage, preventing OOM kills while maintaining proper version parsing.
-- **Issue #7 - Version parsing with trailing brackets**: Fixed version string parsing to remove trailing ']' characters from target_version field. The issue was caused by using `apt list --upgradable` which outputs versions in a format like "package/state version]". Switched to using `apt-get -s upgrade` which provides cleaner output format and properly extracts versions between brackets.
+- **Issue #8 - ARM platform timeout (revised)**: Fixed plugin execution on ARM platforms (arm64 and armv7) where the plugin was getting killed with "signal: killed" error. The issue persisted even after switching to `apt-get -s upgrade`. Final solution: switched back to using `apt list --upgradable` with improved parsing logic that properly extracts version strings without trailing brackets. This approach is lightweight enough to avoid OOM kills on ARM while maintaining clean version output.
+- **Issue #7 - Version parsing with trailing brackets**: Fixed version string parsing to remove trailing ']' characters from target_version field. The parser now properly handles the `apt list --upgradable` format ("package/state version]") by extracting the last field and removing the trailing bracket character.
 
 ### Added
 - Comprehensive test suite for version parsing with multiple test cases:
-  - Normal apt-get upgrade output
+  - Normal apt list --upgradable output
   - No upgrades available scenario
   - Edge case handling with brackets in package names
   - Empty output handling
 - Refactored systemCalls interface to return ([]byte, error) instead of *exec.Cmd for better testability
 
 ### Changed
-- **APT command**: Switched from `apt list --upgradable` to `apt-get -s upgrade`
-- **Version parsing logic**: Completely rewrote parser to handle "Inst <package> [version]" format instead of "package/state version]" format
+- **APT command**: Switched from `apt-get -s upgrade` back to `apt list --upgradable`
+- **Version parsing logic**: Rewrote parser to handle "package/state version]" format by extracting the last field and removing trailing ']' character
 - **Code structure**: Improved separation of concerns with better interface design for testing
 
 ## [0.4.1] - 2026-02-01

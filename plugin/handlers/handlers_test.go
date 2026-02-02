@@ -34,17 +34,11 @@ func TestVersionParsing(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name: "normal apt-get upgrade output",
-			mockOutput: `Reading package lists...
-Updating package lists...
-Reading state information...
-Calculating upgrade...
-The following packages will be upgraded:
-  bsdextrautils (2.35.1-6ubuntu1 -> 2.39.3-9ubuntu6.3)
-  libssl-dev (1.1.1f-1ubuntu2.19 -> 1.1.1f-1ubuntu2.20)
-Inst bsdextrautils [2.39.3-9ubuntu6.3]
-Inst libssl-dev [1.1.1f-1ubuntu2.20]
-Conf bsdextrautils [2.39.3-9ubuntu6.3]
+			name: "normal apt list --upgradable output",
+			mockOutput: `WARNING: apt does not have a stable CLI interface.
+bsdextrautils/xenial-updates 2.39.3-9ubuntu6.3]
+libssl-dev/xenial-updates 1.1.1f-1ubuntu2.20]
+nmap/xenial-updates 7.80+dfsg1-2ubuntu1.1]
 `,
 			wantErr: false,
 		},
@@ -87,7 +81,7 @@ Reading state information...
 						assert.Equal(t, "2.39.3-9ubuntu6.3", update.Target)
 					}
 				}
-				if !found && strings.Contains(tt.mockOutput, "Inst bsdextrautils") {
+				if !found && strings.Contains(tt.mockOutput, "bsdextrautils/xenial-updates") {
 					t.Error("Expected bsdextrautils to be in the results")
 				}
 			}
@@ -98,8 +92,8 @@ Reading state information...
 // TestVersionParsingWithBracketsInOutput ensures that even if apt output contains brackets
 // for other purposes, they don't end up in target_version
 func TestVersionParsingWithBracketsInOutput(t *testing.T) {
-	mockOutput := `Inst package-with-brackets-in-name [1.2.3-4ubuntu5]
-Conf another-package [2.3.4+git20240101]
+	mockOutput := `package-with-brackets-in-name/xenial-updates 1.2.3-4ubuntu5]
+another-package/xenial-updates 2.3.4+git20240101]
 `
 
 	handler := &Handler{

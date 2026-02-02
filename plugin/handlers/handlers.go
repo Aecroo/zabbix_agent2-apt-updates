@@ -295,11 +295,11 @@ func (h *Handler) isPackageOfType(ctx context.Context, pkgName string, updateTyp
 	}
 }
 
-// checkAPTUpdates executes 'apt-get -s upgrade' and parses the output
-// This method provides cleaner version strings without trailing brackets compared to 'apt list --upgradable'
-// Using 'upgrade' instead of 'dist-upgrade' reduces resource usage on ARM platforms
+// checkAPTUpdates executes 'apt list --upgradable' and parses the output
+// This method provides cleaner version strings by properly parsing the apt list format
+// Using 'apt list --upgradable' instead of 'apt-get upgrade/dist-upgrade' significantly reduces resource usage on ARM platforms
 func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*CheckResult, error) {
-	output, err := h.sysCalls.execCommand(ctx, "apt-get", "-s", "upgrade")
+	output, err := h.sysCalls.execCommand(ctx, "apt", "list", "--upgradable")
 	if err != nil {
 		// Check if apt command exists
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -311,7 +311,7 @@ func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*
 				}, nil
 			}
 		}
-		return nil, fmt.Errorf("failed to execute apt-get dist-upgrade: %w", err)
+		return nil, fmt.Errorf("failed to execute apt list --upgradable: %w", err)
 	}
 
 	// Parse the output
@@ -324,50 +324,45 @@ func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*
 			continue
 		}
 
-		// Look for lines like: "Inst <package> [version]" or "Conf <package> [version]"
+		// Look for lines like: "package/state version]"
 		// We want to extract the package name and target version
-		if strings.HasPrefix(line, "Inst") || strings.HasPrefix(line, "Conf") {
-			parts := strings.Fields(line)
-			if len(parts) < 2 {
-				continue
-			}
+		// Format: pkgname/old-state old-version new-version]
+		parts := strings.Fields(line)
+		if len(parts) < 2 {
+			continue
+		}
 
-			pkgName := parts[1] // Package name is the second field after "Inst" or "Conf"
+		// The last field should be the version with trailing ']'
+		lastField := parts[len(parts)-1]
+		if !strings.HasSuffix(lastField, "]") {
+			continue
+		}
 
-			// Find the target version - it's in brackets after the package name
-			// Format: Inst <package> [new-version] ...
-			versionStart := strings.Index(line, "[")
-			if versionStart == -1 {
-				continue
-			}
-			versionEnd := strings.Index(line[versionStart+1:], "]")
-			if versionEnd == -1 {
-				continue
-			}
-			versionEnd += versionStart + 1 // Adjust for substring
+		// Extract package name (first part before '/')
+		pkgName := strings.Split(parts[0], "/")[0]
 
-			// Extract version between brackets
-			version := strings.TrimSpace(line[versionStart+1 : versionEnd])
+		// Extract version by removing the trailing ']'
+		version := strings.TrimSuffix(lastField, "]")
+		version = strings.TrimSpace(version)
 
-			// Filter by update type if needed
-			if updateType != UpdateTypeAll && updateType != "" {
-				isMatch, err := h.isPackageOfType(ctx, pkgName, updateType)
-				if err != nil {
-					// If we can't determine the type, skip this package for filtered queries
-					if updateType != UpdateTypeAll {
-						continue
-					}
-				}
-				if !isMatch {
+		// Filter by update type if needed
+		if updateType != UpdateTypeAll && updateType != "" {
+			isMatch, err := h.isPackageOfType(ctx, pkgName, updateType)
+			if err != nil {
+				// If we can't determine the type, skip this package for filtered queries
+				if updateType != UpdateTypeAll {
 					continue
 				}
 			}
-
-			updates = append(updates, UpdateInfo{
-				Name:   pkgName,
-				Target: version,
-			})
+			if !isMatch {
+				continue
+			}
 		}
+
+		updates = append(updates, UpdateInfo{
+			Name:   pkgName,
+			Target: version,
+		})
 	}
 
 	result := &CheckResult{
