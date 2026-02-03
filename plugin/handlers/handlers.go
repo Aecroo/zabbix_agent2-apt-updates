@@ -328,7 +328,6 @@ func (h *Handler) isPackageOfType(ctx context.Context, pkgName string, updateTyp
 func (h *Handler) getLastAptUpdateTime() (time.Time, error) {
 	listDir := "/var/lib/apt/lists"
 	var maxTime time.Time
-	foundAny := false
 
 	err := filepath.Walk(listDir, func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil {
@@ -343,7 +342,6 @@ func (h *Handler) getLastAptUpdateTime() (time.Time, error) {
 			if info.ModTime().After(maxTime) {
 				maxTime = info.ModTime()
 			}
-			foundAny = true
 		}
 		return nil
 	})
@@ -352,7 +350,8 @@ func (h *Handler) getLastAptUpdateTime() (time.Time, error) {
 		return time.Time{}, fmt.Errorf("failed to walk %s: %w", listDir, err)
 	}
 
-	if !foundAny {
+	// If maxTime is still zero (no files found), return error
+	if maxTime.IsZero() {
 		return time.Time{}, fmt.Errorf("no package list files found in %s", listDir)
 	}
 
