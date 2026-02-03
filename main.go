@@ -50,7 +50,7 @@ SOFTWARE.
 //nolint:gochecknoglobals,revive // required ALL_CAPS by build scripts
 var (
 	PLUGIN_VERSION_MAJOR = 0
-	PLUGIN_VERSION_MINOR = 6
+	PLUGIN_VERSION_MINOR = 7
 	PLUGIN_VERSION_PATCH = 0
 	PLUGIN_VERSION_RC    = ""
 	PLUGIN_LICENSE_YEAR  = 2026

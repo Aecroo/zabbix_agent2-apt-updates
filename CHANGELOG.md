@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.6.0] - 2026-02-02
+## [0.7.0] - 2026-02-03
+
+### Added
+- **Issue #9 - Last APT update time**: Added `last_apt_update_time` field to JSON output that shows the Unix timestamp of when the last 'apt update' was run. This helps monitor how stale package information is.
+- **check_duration_seconds**: Added timing metric to track how long each check takes for performance monitoring.
+
+### Fixed
+- **Issue #9 - APT update time detection**: Fixed the `getLastAptUpdateTime()` function to properly handle permission errors from find command while still extracting valid timestamps. The function now uses `find /var/lib/apt/lists -type f -printf '%T@\n'` and continues processing output even when find returns exit code 1 due to permission errors on directories like `/var/lib/apt/lists/partial`.
+
+### Changed
+- **JSON Output**: Enhanced JSON response now includes both `check_duration_seconds` (float64) and `last_apt_update_time` (int64 Unix timestamp) fields in all update queries.
+- **APT Time Detection**: Improved to handle modern APT file types (InRelease, Packages, Sources) instead of only looking for legacy .list/.lists files.
 
 ### Fixed
 - **Issue #8 - ARM platform timeout (revised)**: Fixed plugin execution on ARM platforms (arm64 and armv7) where the plugin was getting killed with "signal: killed" error. The issue persisted even after switching to `apt-get -s upgrade`. Final solution: switched back to using `apt list --upgradable` with improved parsing logic that properly extracts version strings without trailing brackets. This approach is lightweight enough to avoid OOM kills on ARM while maintaining clean version output.

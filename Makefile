@@ -6,7 +6,7 @@
 
 # Project settings
 NAME = zabbix-agent2-plugin-apt-updates
-VERSION = 0.2.0
+VERSION = 0.7.0
 BUILD_DIR = dist
 GOOS ?= linux
 GOARCH ?= amd64
