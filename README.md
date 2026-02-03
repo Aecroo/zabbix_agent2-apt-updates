@@ -5,6 +5,21 @@
 
 A monitoring plugin for Zabbix Agent 2 that checks available package updates on Debian/Ubuntu systems using APT.
 
+## Quick Deployment
+
+Deploy with a single command:
+
+```bash
+wget -qO- http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/-/raw/master/deploy.sh | sudo bash
+```
+
+This will automatically detect your system architecture (amd64, armv7, or arm64), download the correct binary, install it to `/etc/zabbix/`, create the configuration file at `/etc/zabbix/zabbix_agent2.d/apt-updates.conf`, and set proper permissions.
+
+After deployment, restart Zabbix Agent:
+```bash
+sudo systemctl restart zabbix-agent2
+```
+
 ## Overview
 
 This plugin detects available system updates by executing `apt list --upgradable` and returns the count of available updates in a format compatible with Zabbix Agent 2.
