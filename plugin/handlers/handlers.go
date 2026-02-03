@@ -79,7 +79,7 @@ type AllUpdatesResult struct {
 	AllUpdatesDetails      []UpdateInfo `json:"all_updates_details,omitempty"`
 
 	CheckDurationSeconds float64 `json:"check_duration_seconds"`
-	LastAptUpdateTime     string   `json:"last_apt_update_time,omitempty"`
+	LastAptUpdateTime     int64    `json:"last_apt_update_time"` // Unix timestamp in seconds
 }
 
 // UpdateInfo represents a single package update
@@ -93,8 +93,8 @@ type UpdateInfo struct {
 type CheckResult struct {
 	AvailableUpdates     int         `json:"available_updates"`
 	PackageDetailsList   []UpdateInfo `json:"package_details_list,omitempty"`
-	CheckDurationSeconds float64    `json:"check_duration_seconds"`
-	LastAptUpdateTime     string      `json:"last_apt_update_time,omitempty"`
+	CheckDurationSeconds float64 `json:"check_duration_seconds"`
+	LastAptUpdateTime     int64       `json:"last_apt_update_time"` // Unix timestamp in seconds
 }
 
 type commandExecutor interface {
@@ -164,16 +164,16 @@ func (h *Handler) GetAllUpdates(ctx context.Context, metricParams map[string]str
 	result.CheckDurationSeconds = time.Since(startTime).Seconds()
 
 	// Get last apt update time from package lists (also available in allUpdates)
-	if allUpdates.LastAptUpdateTime != "" {
+	if allUpdates.LastAptUpdateTime != 0 {
 		result.LastAptUpdateTime = allUpdates.LastAptUpdateTime
 	} else {
 		// Fallback: try to get it directly if not already set by checkAPTUpdates
 		lastUpdateTime, err := h.getLastAptUpdateTime()
 		if err == nil {
-			result.LastAptUpdateTime = lastUpdateTime.Format(time.RFC3339)
+			result.LastAptUpdateTime = lastUpdateTime.Unix()
 		} else {
-			// If we can't get the time (e.g., no package lists), log it but don't fail
-			h.sysCalls.execCommand(ctx, "sh", "-c", "echo 'Warning: Could not determine last apt update time'")
+			// If we can't get the time (e.g., no package lists), set to 0
+			result.LastAptUpdateTime = 0
 		}
 	}
 
@@ -441,7 +441,7 @@ func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*
 	// Get last apt update time from package lists
 	lastUpdateTime, err := h.getLastAptUpdateTime()
 	if err == nil {
-		result.LastAptUpdateTime = lastUpdateTime.Format(time.RFC3339)
+		result.LastAptUpdateTime = lastUpdateTime.Unix()
 	}
 
 	return result, nil
