@@ -39,7 +39,7 @@ The template includes the following pre-configured items:
 ### Master Item
 | Key | Type | Description |
 |-----|------|-------------|
-| `updates.get` | Zabbix Agent (active) | Returns comprehensive JSON with all update information. This is the master item that collects raw data from the plugin. |
+| `updates.get` | Zabbix Agent | Returns comprehensive JSON with all update information. This is the master item that collects raw data from the plugin. All other items are dependent on this master item.
 
 **Configuration:**
 - Update interval: 15 minutes (configurable)
@@ -52,10 +52,10 @@ These items extract numeric counts from the JSON response using JSONPath preproc
 
 | Key | Type | JSONPath Expression | Description |
 |-----|------|-------------------|-------------|
-| `updates.all_updates_count` | Dependent (numeric) | `$.all_updates_count` | Total number of available updates across all categories |
-| `updates.security_updates_count` | Dependent (numeric) | `$.security_updates_count` | Number of security updates available |
-| `updates.recommended_updates_count` | Dependent (numeric) | `$.recommended_updates_count` | Number of recommended updates available |
-| `updates.optional_updates_count` | Dependent (numeric) | `$.optional_updates_count` | Number of optional updates available |
+| `updates.all_updates_count` | Dependent | `$.all_updates_count` | Total number of available updates across all categories |
+| `updates.security_updates_count` | Dependent | `$.security_updates_count` | Number of security updates available |
+| `updates.recommended_updates_count` | Dependent | `$.recommended_updates_count` | Number of recommended updates available |
+| `updates.optional_updates_count` | Dependent | `$.optional_updates_count` | Number of optional updates available |
 
 ### Dependent Items - Lists
 
@@ -63,10 +63,10 @@ These items extract package lists from the JSON response:
 
 | Key | Type | JSONPath Expression | Description |
 |-----|------|-------------------|-------------|
-| `updates.all_updates_list` | Dependent (text) | `$.all_updates_list` | Array of all package names available for update |
-| `updates.security_updates_list` | Dependent (text) | `$.security_updates_list` | Array of security update package names |
-| `updates.recommended_updates_list` | Dependent (text) | `$.recommended_updates_list` | Array of recommended update package names |
-| `updates.optional_updates_list` | Dependent (text) | `$.optional_updates_list` | Array of optional update package names |
+| `updates.all_updates_list` | Dependent | `$.all_updates_list` | Array of all package names available for update |
+| `updates.security_updates_list` | Dependent | `$.security_updates_list` | Array of security update package names |
+| `updates.recommended_updates_list` | Dependent | `$.recommended_updates_list` | Array of recommended update package names |
+| `updates.optional_updates_list` | Dependent | `$.optional_updates_list` | Array of optional update package names |
 
 ### Dependent Items - Details
 
@@ -74,10 +74,10 @@ These items extract detailed information including versions and repository sourc
 
 | Key | Type | JSONPath Expression | Description |
 |-----|------|-------------------|-------------|
-| `updates.all_updates_details` | Dependent (text) | `$.all_updates_details` | Array of objects with full details for all updates |
-| `updates.security_updates_details` | Dependent (text) | `$.security_updates_details` | Array of objects with full details for security updates |
-| `updates.recommended_updates_details` | Dependent (text) | `$.recommended_updates_details` | Array of objects with full details for recommended updates |
-| `updates.optional_updates_details` | Dependent (text) | `$.optional_updates_details` | Array of objects with full details for optional updates |
+| `updates.all_updates_details` | Dependent | `$.all_updates_details` | Array of objects with full details for all updates |
+| `updates.security_updates_details` | Dependent | `$.security_updates_details` | Array of objects with full details for security updates |
+| `updates.recommended_updates_details` | Dependent | `$.recommended_updates_details` | Array of objects with full details for recommended updates |
+| `updates.optional_updates_details` | Dependent | `$.optional_updates_details` | Array of objects with full details for optional updates |
 
 ### Monitoring Items
 
@@ -85,8 +85,8 @@ These items provide operational metrics:
 
 | Key | Type | JSONPath Expression | Description |
 |-----|------|-------------------|-------------|
-| `updates.last_apt_update_time` | Dependent (numeric) | `$.last_apt_update_time` | Unix timestamp of the last APT database update. Helps identify stale cache issues. |
-| `updates.check_duration_seconds` | Dependent (float) | `$.check_duration_seconds` | Duration in seconds for the last update check. Useful for performance monitoring. |
+| `updates.last_apt_update_time` | Dependent | `$.last_apt_update_time` | Unix timestamp of the last APT database update. Helps identify stale cache issues. |
+| `updates.check_duration_seconds` | Dependent | `$.check_duration_seconds` | Duration in seconds for the last update check. Useful for performance monitoring. |
 
 ## Template Triggers
 
