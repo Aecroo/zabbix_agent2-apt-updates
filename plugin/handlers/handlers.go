@@ -22,9 +22,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -327,35 +326,40 @@ func (h *Handler) isPackageOfType(ctx context.Context, pkgName string, updateTyp
 // This indicates when the last 'apt update' was run
 func (h *Handler) getLastAptUpdateTime() (time.Time, error) {
 	listDir := "/var/lib/apt/lists"
-	var maxTime time.Time
 
-	err := filepath.Walk(listDir, func(path string, info os.FileInfo, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
+	// Use find command to get the most recent file modification time
+	// This is more reliable than walking the directory as it handles all APT file types
+	// (InRelease, Packages, Sources, etc.) and permission issues better
+	output, err := h.sysCalls.execCommand(context.Background(), "find", listDir, "-type", "f", "-printf", "%T@\n")
+	if err != nil {
+		// If find command fails (e.g., directory doesn't exist), return zero time
+		return time.Time{}, nil
+	}
+
+	// Parse the output to find the maximum timestamp
+	var maxTime float64
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
 		}
-		// Skip directories and non-regular files
-		if !info.Mode().IsRegular() {
-			return nil
+		timestamp, err := strconv.ParseFloat(line, 64)
+		if err != nil {
+			// Skip invalid lines
+			continue
 		}
-		// Only consider actual package list files (not metadata or lock files)
-		if strings.HasSuffix(path, ".list") || strings.HasSuffix(path, ".lists") {
-			if info.ModTime().After(maxTime) {
-				maxTime = info.ModTime()
+		if timestamp > maxTime {
+				maxTime = timestamp
 			}
 		}
-		return nil
-	})
 
-	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to walk %s: %w", listDir, err)
+	// If no files found, return zero time (not an error)
+	if maxTime == 0 {
+		return time.Time{}, nil
 	}
 
-	// If maxTime is still zero (no files found), return error
-	if maxTime.IsZero() {
-		return time.Time{}, fmt.Errorf("no package list files found in %s", listDir)
-	}
-
-	return maxTime, nil
+	// Convert float64 timestamp to time.Time
+	return time.Unix(int64(maxTime), 0), nil
 }
 
 // checkAPTUpdates executes 'apt list --upgradable' and parses the output
