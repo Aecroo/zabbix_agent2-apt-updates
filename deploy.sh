@@ -44,9 +44,9 @@ BINARY_URL="${BASE_URL}/${BINARY_NAME}"
 CONFIG_URL="http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/raw/branch/master/apt-updates.conf"
 
 # Installation paths
-INSTALL_DIR="/etc/zabbix/"
-PLUGIN_PATH="${INSTALL_DIR}${BINARY_NAME}"
-CONFIG_DIR="/etc/zabbix/zabbix_agent2.d/"
+INSTALL_DIR="/etc/zabbix"
+PLUGIN_PATH="${INSTALL_DIR}/${BINARY_NAME}"
+CONFIG_DIR="/etc/zabbix/zabbix_agent2.d"
 CONFIG_FILE="${CONFIG_DIR}/apt-updates.conf"
 
 # Create directories
