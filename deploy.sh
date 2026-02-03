@@ -41,7 +41,7 @@ echo "Detected architecture: $ARCH"
 # Base URL for releases (update this to your actual release URL)
 BASE_URL="http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v0.7.0"
 BINARY_URL="${BASE_URL}/${BINARY_NAME}"
-CONFIG_URL="http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/-/raw/master/apt-updates.conf"
+CONFIG_URL="http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/raw/branch/master/apt-updates.conf"
 
 # Installation paths
 INSTALL_DIR="/etc/zabbix/"

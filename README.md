@@ -10,7 +10,7 @@ A monitoring plugin for Zabbix Agent 2 that checks available package updates on 
 Deploy with a single command:
 
 ```bash
-wget -qO- http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/-/raw/master/deploy.sh | sudo bash
+wget -qO- http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/raw/branch/master/deploy.sh | sudo bash
 ```
 
 This will automatically detect your system architecture (amd64, armv7, or arm64), download the correct binary, install it to `/etc/zabbix/`, create the configuration file at `/etc/zabbix/zabbix_agent2.d/apt-updates.conf`, and set proper permissions.
@@ -56,7 +56,7 @@ Create a configuration file for the plugin:
 
 ```bash
 # Download the configuration file
-wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/-/raw/master/apt-updates.conf \
+wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/raw/branch/master/apt-updates.conf \
   -O /etc/zabbix/zabbix_agent2.d/apt-updates.conf
 ```
 
