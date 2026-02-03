@@ -332,8 +332,13 @@ func (h *Handler) getLastAptUpdateTime() (time.Time, error) {
 	// (InRelease, Packages, Sources, etc.) and permission issues better
 	output, err := h.sysCalls.execCommand(context.Background(), "find", listDir, "-type", "f", "-printf", "%T@\n")
 	if err != nil {
-		// If find command fails (e.g., directory doesn't exist), return zero time
-		return time.Time{}, nil
+		// find may return exit code 1 if there are permission errors on some directories
+		// (e.g., /var/lib/apt/lists/partial), but still produces valid output for accessible files
+		// Only return zero time if there's no output at all
+		if len(output) == 0 {
+			return time.Time{}, nil
+		}
+		// Continue processing the output even if find had permission errors
 	}
 
 	// Parse the output to find the maximum timestamp
@@ -348,10 +353,12 @@ func (h *Handler) getLastAptUpdateTime() (time.Time, error) {
 			// Skip invalid lines
 			continue
 		}
+		// find -printf "%T@" returns seconds (with nanosecond precision as decimal)
+		// No conversion needed - the value is already in seconds
 		if timestamp > maxTime {
-				maxTime = timestamp
-			}
+			maxTime = timestamp
 		}
+	}
 
 	// If no files found, return zero time (not an error)
 	if maxTime == 0 {
