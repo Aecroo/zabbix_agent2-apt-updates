@@ -22,8 +22,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"golang.zabbix.com/sdk/errs"
 )
@@ -74,6 +77,9 @@ type AllUpdatesResult struct {
 	RecommendedUpdatesDetails []UpdateInfo `json:"recommended_updates_details,omitempty"`
 	OptionalUpdatesDetails   []UpdateInfo `json:"optional_updates_details,omitempty"`
 	AllUpdatesDetails      []UpdateInfo `json:"all_updates_details,omitempty"`
+
+	CheckDurationSeconds float64 `json:"check_duration_seconds"`
+	LastAptUpdateTime     string   `json:"last_apt_update_time,omitempty"`
 }
 
 // UpdateInfo represents a single package update
@@ -87,6 +93,8 @@ type UpdateInfo struct {
 type CheckResult struct {
 	AvailableUpdates     int         `json:"available_updates"`
 	PackageDetailsList   []UpdateInfo `json:"package_details_list,omitempty"`
+	CheckDurationSeconds float64    `json:"check_duration_seconds"`
+	LastAptUpdateTime     string      `json:"last_apt_update_time,omitempty"`
 }
 
 type commandExecutor interface {
@@ -143,10 +151,30 @@ func (h *Handler) GetUpdateDetails(ctx context.Context, metricParams map[string]
 func (h *Handler) GetAllUpdates(ctx context.Context, metricParams map[string]string, extraParams ...string) (any, error) {
 	result := &AllUpdatesResult{}
 
+	// Track start time for duration calculation
+	startTime := time.Now()
+
 	// Get all updates once - this is the most expensive operation
 	allUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeAll)
 	if err != nil {
 		return nil, errs.Wrap(err, "failed to check APT updates for 'all'")
+	}
+
+	// Calculate check duration
+	result.CheckDurationSeconds = time.Since(startTime).Seconds()
+
+	// Get last apt update time from package lists (also available in allUpdates)
+	if allUpdates.LastAptUpdateTime != "" {
+		result.LastAptUpdateTime = allUpdates.LastAptUpdateTime
+	} else {
+		// Fallback: try to get it directly if not already set by checkAPTUpdates
+		lastUpdateTime, err := h.getLastAptUpdateTime()
+		if err == nil {
+			result.LastAptUpdateTime = lastUpdateTime.Format(time.RFC3339)
+		} else {
+			// If we can't get the time (e.g., no package lists), log it but don't fail
+			h.sysCalls.execCommand(ctx, "sh", "-c", "echo 'Warning: Could not determine last apt update time'")
+		}
 	}
 
 	// Set all updates data
@@ -295,10 +323,48 @@ func (h *Handler) isPackageOfType(ctx context.Context, pkgName string, updateTyp
 	}
 }
 
+// getLastAptUpdateTime returns the most recent modification time of APT package lists
+// This indicates when the last 'apt update' was run
+func (h *Handler) getLastAptUpdateTime() (time.Time, error) {
+	listDir := "/var/lib/apt/lists"
+	var maxTime time.Time
+	foundAny := false
+
+	err := filepath.Walk(listDir, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		// Skip directories and non-regular files
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+		// Only consider actual package list files (not metadata or lock files)
+		if strings.HasSuffix(path, ".list") || strings.HasSuffix(path, ".lists") {
+			if info.ModTime().After(maxTime) {
+				maxTime = info.ModTime()
+			}
+			foundAny = true
+		}
+		return nil
+	})
+
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to walk %s: %w", listDir, err)
+	}
+
+	if !foundAny {
+		return time.Time{}, fmt.Errorf("no package list files found in %s", listDir)
+	}
+
+	return maxTime, nil
+}
+
 // checkAPTUpdates executes 'apt list --upgradable' and parses the output
 // This method provides cleaner version strings by properly parsing the apt list format
 // Using 'apt list --upgradable' instead of 'apt-get upgrade/dist-upgrade' significantly reduces resource usage on ARM platforms
 func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*CheckResult, error) {
+	startTime := time.Now()
+
 	output, err := h.sysCalls.execCommand(ctx, "apt", "list", "--upgradable")
 	if err != nil {
 		// Check if apt command exists
@@ -308,6 +374,7 @@ func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*
 				return &CheckResult{
 					AvailableUpdates:    0,
 					PackageDetailsList: []UpdateInfo{},
+					CheckDurationSeconds: time.Since(startTime).Seconds(),
 				}, nil
 			}
 		}
@@ -366,8 +433,15 @@ func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*
 	}
 
 	result := &CheckResult{
-		AvailableUpdates:    len(updates),
-		PackageDetailsList: updates,
+		AvailableUpdates:      len(updates),
+		PackageDetailsList:     updates,
+		CheckDurationSeconds: time.Since(startTime).Seconds(),
+	}
+
+	// Get last apt update time from package lists
+	lastUpdateTime, err := h.getLastAptUpdateTime()
+	if err == nil {
+		result.LastAptUpdateTime = lastUpdateTime.Format(time.RFC3339)
 	}
 
 	return result, nil
