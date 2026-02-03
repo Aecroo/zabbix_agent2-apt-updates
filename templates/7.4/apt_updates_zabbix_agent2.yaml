@@ -1,0 +1,219 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+  templates:
+    - uuid: 5cb20ef15c42490589e2e1e8c624ec16
+      template: 'apt updates by Zabbix agent 2'
+      name: 'apt updates by Zabbix agent 2'
+      vendor:
+        name: Aecroo
+        version: 7.4-0
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: 7da978c200c240e1bfa6c6ad3875484e
+          name: 'updates all count'
+          type: DEPENDENT
+          key: updates.all_updates_count
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.all_updates_count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+        - uuid: 2b864937bed04cd89b331768e742959e
+          name: 'updates all details'
+          type: DEPENDENT
+          key: updates.all_updates_details
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.all_updates_details
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+        - uuid: da614f35a5c44e6187755c75d81a7f96
+          name: 'updates all list'
+          type: DEPENDENT
+          key: updates.all_updates_list
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.all_updates_list
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+        - uuid: 5e607c44086f41dcaa8448e9dd1a7ec2
+          name: 'check update duration'
+          type: DEPENDENT
+          key: updates.check_duration_seconds
+          value_type: FLOAT
+          trends: '0'
+          units: s
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.check_duration_seconds
+              error_handler: DISCARD_VALUE
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+        - uuid: 753f6904fdd44688b946d8b10d2aaa36
+          name: 'get updates raw'
+          key: updates.get
+          delay: 15m
+          history: 1h
+          value_type: TEXT
+          timeout: 10m
+          tags:
+            - tag: component
+              value: raw
+        - uuid: c9772883d6a34bf392c7b61e304d4aa0
+          name: 'last apt update time'
+          type: DEPENDENT
+          key: updates.last_apt_update_time
+          trends: '0'
+          units: unixtime
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.last_apt_update_time
+              error_handler: DISCARD_VALUE
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+        - uuid: eec31e93e0014beda53422016c7872ce
+          name: 'updates optional count'
+          type: DEPENDENT
+          key: updates.optional_updates_count
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.optional_updates_count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+        - uuid: 9385c770e84d497b9ec2dbbd9005c1e7
+          name: 'updates recommended count'
+          type: DEPENDENT
+          key: updates.recommended_updates_count
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.recommended_updates_count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+        - uuid: b50f99ad78144bd085710ea27d5e52d2
+          name: 'updates recommended details'
+          type: DEPENDENT
+          key: updates.recommended_updates_details
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.recommended_updates_details
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+        - uuid: dd3606e87f7a474282f57209fe1e3c33
+          name: 'updates recommended list'
+          type: DEPENDENT
+          key: updates.recommended_updates_list
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.recommended_updates_list
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+        - uuid: 6c0c09f6c26d469582a9c7d6d3707117
+          name: 'updates security count'
+          type: DEPENDENT
+          key: updates.security_updates_count
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.security_updates_count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+        - uuid: 14b39c04ca0b4029adec0535a9a58094
+          name: 'updates security details'
+          type: DEPENDENT
+          key: updates.security_updates_details
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.security_updates_details
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+        - uuid: 2840181d34a54e3d953585d9eec3a8c7
+          name: 'updates security list'
+          type: DEPENDENT
+          key: updates.security_updates_list
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.security_updates_list
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+      tags:
+        - tag: class
+          value: software
+        - tag: target
+          value: linux

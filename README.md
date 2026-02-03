@@ -189,6 +189,67 @@ sudo rm /etc/zabbix/zabbix_agent2.d/apt-updates.conf
 sudo systemctl restart zabbix-agent2
 ```
 
+## Zabbix Template
+
+A pre-configured Zabbix template is available for easy integration:
+
+### Template Features
+
+The included template (`templates/7.4/apt_updates_zabbix_agent2.yaml`) provides:
+
+- **Comprehensive monitoring** of all update types (security, recommended, optional)
+- **Pre-configured items** with JSONPath preprocessing for easy setup
+- **Triggers ready** to alert when updates are available
+- **Performance metrics** including check duration and last APT update time
+
+### Importing the Template
+
+1. Download the template file:
+   ```bash
+   wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/raw/branch/master/templates/7.4/apt_updates_zabbix_agent2.yaml -O apt_updates_template.yaml
+   ```
+
+2. In the Zabbix web interface:
+   - Go to **Configuration** > **Templates**
+   - Click **Import**
+   - Select the downloaded YAML file
+   - Click **Import** to complete
+
+3. Link the template to your hosts:
+   - Go to **Configuration** > **Hosts**
+   - Select your monitored host
+   - In the **Templates** tab, click **Add**
+   - Search for and select **apt updates by Zabbix agent 2**
+   - Click **Add** to link the template
+
+### Template Items
+
+The template includes these pre-configured items:
+
+| Item Key | Type | Description |
+|----------|------|-------------|
+| `updates.all_updates_count` | Dependent (numeric) | Total number of available updates |
+| `updates.security_updates_count` | Dependent (numeric) | Number of security updates |
+| `updates.recommended_updates_count` | Dependent (numeric) | Number of recommended updates |
+| `updates.optional_updates_count` | Dependent (numeric) | Number of optional updates |
+| `updates.all_updates_details` | Dependent (text) | Detailed information about all updates |
+| `updates.security_updates_details` | Dependent (text) | Detailed information about security updates |
+| `updates.recommended_updates_details` | Dependent (text) | Detailed information about recommended updates |
+| `updates.all_updates_list` | Dependent (text) | List of all available packages |
+| `updates.security_updates_list` | Dependent (text) | List of security update packages |
+| `updates.recommended_updates_list` | Dependent (text) | List of recommended update packages |
+| `updates.last_apt_update_time` | Dependent (numeric) | Timestamp of last APT database update |
+| `updates.check_duration_seconds` | Dependent (float) | Duration of the last check in seconds |
+
+### Template Triggers
+
+The template includes automatic triggers that alert when:
+- Security updates are available
+- Recommended updates are available
+- Optional updates are available
+
+```
+
 ## Project Structure
 
 ```
@@ -208,6 +269,9 @@ zabbix_agent2-apt-updates/
 │   ├── zabbix-agent2-plugin-apt-updates-linux-amd64
 │   ├── zabbix-agent2-plugin-apt-updates-linux-arm64
 │   └── zabbix-agent2-plugin-apt-updates-linux-armv7
+├── templates/              # Zabbix templates
+│   └── 7.4/
+│       └── apt_updates_zabbix_agent2.yaml
 ├── README.md               # This file
 ├── CHANGELOG.md            # Version history
 └── .gitignore              # Files to ignore in version control
