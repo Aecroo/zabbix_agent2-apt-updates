@@ -96,53 +96,17 @@ sudo systemctl restart zabbix-agent2
 
 ### Step 6: Set Up Monitoring (Optional)
 
-The plugin returns comprehensive JSON data that can be processed using Zabbix's JSONPath preprocessing.
+The plugin returns comprehensive JSON data that can be processed using Zabbix's JSONPath preprocessing. For detailed information about creating items with JSONPath preprocessing and trigger configurations, see the [template documentation](templates/7.4/README.md).
 
-**Item Keys:**
-
-- `updates.get` - Returns comprehensive JSON with all update information. Use Zabbix JSONPath preprocessing to extract specific values.
-
-  Example JSONPath expressions:
-  - Security updates count: `.security_updates_count`
-  - All updates count: `.all_updates_count`
-  - Security updates list: `.security_updates_list`
-  - Package details: `.all_updates_details[*].name`
-
-**Creating Items with JSONPath Preprocessing:**
-
-1. Create an item for the raw data:
-   - **Key**: `updates.get`
-   - **Type of information**: Text
-
-2. Create dependent items using JSONPath preprocessing:
-
-   Example: Security updates count
-   - **Type**: Zabbix Agent (active)
-   - **Key**: `updates.get`
-   - **Type of information**: Numeric (float)
-   - **Preprocessing**: JSONPath "`.security_updates_count`"
-
-   Example: Total updates count
-   - **Type**: Zabbix Agent (active)
-   - **Key**: `updates.get`
-   - **Type of information**: Numeric (float)
-   - **Preprocessing**: JSONPath "`.all_updates_count`"
-
-   Example: List of security updates
-   - **Type**: Zabbix Agent (active)
-   - **Key**: `updates.get`
-   - **Type of information**: Text
-   - **Preprocessing**: JSONPath "`.security_updates_list`"
+Example JSONPath expressions:
+- Security updates count: `.security_updates_count`
+- All updates count: `.all_updates_count`
+- Security updates list: `.security_updates_list`
+- Package details: `.all_updates_details[*].name`
 
 ### Step 7: Create Triggers (Optional)
 
-Create triggers to alert when updates are available:
-
-```
-Trigger name: "Security updates available"
-Expression: {template_name:updates.get.security_updates_count.last()}>0
-Severity: Information
-```
+For trigger configurations, see the [template documentation](templates/7.4/README.md) which includes pre-configured triggers for security, recommended, and optional updates.
 
 ### Updating the Plugin
 
@@ -191,64 +155,15 @@ sudo systemctl restart zabbix-agent2
 
 ## Zabbix Template
 
-A pre-configured Zabbix template is available for easy integration:
+A pre-configured Zabbix template is available for easy integration. See [templates/7.4/README.md](templates/7.4/README.md) for comprehensive template documentation including:
 
-### Template Features
+- Template features and capabilities
+- Complete list of all items with JSONPath expressions
+- Trigger configurations and alerting rules
+- Import instructions and best practices
+- Troubleshooting guide
 
-The included template (`templates/7.4/apt_updates_zabbix_agent2.yaml`) provides:
-
-- **Comprehensive monitoring** of all update types (security, recommended, optional)
-- **Pre-configured items** with JSONPath preprocessing for easy setup
-- **Triggers ready** to alert when updates are available
-- **Performance metrics** including check duration and last APT update time
-
-### Importing the Template
-
-1. Download the template file:
-   ```bash
-   wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/raw/branch/master/templates/7.4/apt_updates_zabbix_agent2.yaml -O apt_updates_template.yaml
-   ```
-
-2. In the Zabbix web interface:
-   - Go to **Configuration** > **Templates**
-   - Click **Import**
-   - Select the downloaded YAML file
-   - Click **Import** to complete
-
-3. Link the template to your hosts:
-   - Go to **Configuration** > **Hosts**
-   - Select your monitored host
-   - In the **Templates** tab, click **Add**
-   - Search for and select **apt updates by Zabbix agent 2**
-   - Click **Add** to link the template
-
-### Template Items
-
-The template includes these pre-configured items:
-
-| Item Key | Type | Description |
-|----------|------|-------------|
-| `updates.all_updates_count` | Dependent (numeric) | Total number of available updates |
-| `updates.security_updates_count` | Dependent (numeric) | Number of security updates |
-| `updates.recommended_updates_count` | Dependent (numeric) | Number of recommended updates |
-| `updates.optional_updates_count` | Dependent (numeric) | Number of optional updates |
-| `updates.all_updates_details` | Dependent (text) | Detailed information about all updates |
-| `updates.security_updates_details` | Dependent (text) | Detailed information about security updates |
-| `updates.recommended_updates_details` | Dependent (text) | Detailed information about recommended updates |
-| `updates.all_updates_list` | Dependent (text) | List of all available packages |
-| `updates.security_updates_list` | Dependent (text) | List of security update packages |
-| `updates.recommended_updates_list` | Dependent (text) | List of recommended update packages |
-| `updates.last_apt_update_time` | Dependent (numeric) | Timestamp of last APT database update |
-| `updates.check_duration_seconds` | Dependent (float) | Duration of the last check in seconds |
-
-### Template Triggers
-
-The template includes automatic triggers that alert when:
-- Security updates are available
-- Recommended updates are available
-- Optional updates are available
-
-```
+The template file is located at `templates/7.4/apt_updates_zabbix_agent2.yaml`.
 
 ## Project Structure
 
