@@ -29,8 +29,9 @@ The template provides comprehensive monitoring of system updates with the follow
    - Check duration in seconds
    - Last APT database update timestamp
 
-4. **Pre-configured Triggers**
-   - Automatic alerts when updates are available in any category
+4. **Trigger Support**
+   - Items ready for trigger creation (see Triggers section)
+   - Recommended trigger expressions provided
 
 ## Template Items
 
@@ -90,21 +91,25 @@ These items provide operational metrics:
 
 ## Template Triggers
 
-The template includes automatic triggers that alert when updates are available:
+**Note:** This template currently includes only items for monitoring update counts and details. It does not include pre-configured triggers in the YAML file.
 
-### Security Updates Trigger
+### Creating Triggers Manually
+
+You can create triggers in Zabbix to alert when updates are available. Here are recommended trigger configurations:
+
+#### Security Updates Trigger
 - **Name**: "Security updates available"
 - **Expression**: `{template_name:updates.security_updates_count.last()}>0`
 - **Severity**: Information
 - **Description**: Alerts when security updates (vulnerability fixes) are available. These should be applied as soon as possible.
 
-### Recommended Updates Trigger
+#### Recommended Updates Trigger
 - **Name**: "Recommended updates available"
 - **Expression**: `{template_name:updates.recommended_updates_count.last()}>0`
 - **Severity**: Information
 - **Description**: Alerts when recommended updates (bug fixes and improvements) are available.
 
-### Optional Updates Trigger
+#### Optional Updates Trigger
 - **Name**: "Optional updates available"
 - **Expression**: `{template_name:updates.optional_updates_count.last()}>0`
 - **Severity**: Information

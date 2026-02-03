@@ -159,7 +159,7 @@ A pre-configured Zabbix template is available for easy integration. See [templat
 
 - Template features and capabilities
 - Complete list of all items with JSONPath expressions
-- Trigger configurations and alerting rules
+- Trigger recommendations (template includes only items, not pre-configured triggers)
 - Import instructions and best practices
 - Troubleshooting guide
 
