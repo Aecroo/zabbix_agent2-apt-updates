@@ -19,10 +19,12 @@
 package handlers
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -67,6 +69,10 @@ type AllUpdatesResult struct {
 	OptionalUpdatesCount    int         `json:"optional_updates_count"`
 	AllUpdatesCount         int         `json:"all_updates_count"`
 
+	PhasedUpdatesCount     int         `json:"phased_updates_count,omitempty"`
+	PhasedUpdatesList       []string   `json:"phased_updates_list,omitempty"`
+	PhasedUpdatesDetails    []UpdateInfo `json:"phased_updates_details,omitempty"`
+
 	SecurityUpdatesList     []string   `json:"security_updates_list,omitempty"`
 	RecommendedUpdatesList  []string   `json:"recommended_updates_list,omitempty"`
 	OptionalUpdatesList    []string   `json:"optional_updates_list,omitempty"`
@@ -83,9 +89,10 @@ type AllUpdatesResult struct {
 
 // UpdateInfo represents a single package update
 type UpdateInfo struct {
-	Name    string `json:"name"`
-	Current string `json:"current_version,omitempty"`
-	Target  string `json:"target_version,omitempty"`
+	Name     string `json:"name"`
+	Current  string `json:"current_version,omitempty"`
+	Target   string `json:"target_version,omitempty"`
+	IsPhased bool   `json:"is_phased,omitempty"` // Indicates if this update is subject to phased rollout
 }
 
 // CheckResult contains the complete check result
@@ -110,7 +117,7 @@ type osWrapper struct{}
 func (h *Handler) CheckUpdateCount(ctx context.Context, metricParams map[string]string, extraParams ...string) (any, error) {
 	updateType := getUpdateTypeFromExtra(extraParams)
 
-	result, err := h.checkAPTUpdates(ctx, updateType)
+	result, err := h.checkAPTUpdates(ctx, updateType, false)
 	if err != nil {
 		return nil, errs.Wrap(err, "failed to check APT updates")
 	}
@@ -121,7 +128,7 @@ func (h *Handler) CheckUpdateCount(ctx context.Context, metricParams map[string]
 // GetUpdateList returns a JSON list of available APT updates
 func (h *Handler) GetUpdateList(ctx context.Context, metricParams map[string]string, extraParams ...string) (any, error) {
 	updateType := getUpdateTypeFromExtra(extraParams)
-	result, err := h.checkAPTUpdates(ctx, updateType)
+	result, err := h.checkAPTUpdates(ctx, updateType, false)
 	if err != nil {
 		return nil, errs.Wrap(err, "failed to check APT updates")
 	}
@@ -138,7 +145,7 @@ func (h *Handler) GetUpdateList(ctx context.Context, metricParams map[string]str
 // GetUpdateDetails returns detailed information about available APT updates
 func (h *Handler) GetUpdateDetails(ctx context.Context, metricParams map[string]string, extraParams ...string) (any, error) {
 	updateType := getUpdateTypeFromExtra(extraParams)
-	result, err := h.checkAPTUpdates(ctx, updateType)
+	result, err := h.checkAPTUpdates(ctx, updateType, false)
 	if err != nil {
 		return nil, errs.Wrap(err, "failed to check APT updates")
 	}
@@ -153,8 +160,8 @@ func (h *Handler) GetAllUpdates(ctx context.Context, metricParams map[string]str
 	// Track start time for duration calculation
 	startTime := time.Now()
 
-	// Get all updates once - this is the most expensive operation
-	allUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeAll)
+	// Get all updates including phased ones - this is the most expensive operation
+	allUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeAll, true)
 	if err != nil {
 		return nil, errs.Wrap(err, "failed to check APT updates for 'all'")
 	}
@@ -176,8 +183,8 @@ func (h *Handler) GetAllUpdates(ctx context.Context, metricParams map[string]str
 		}
 	}
 
-	// Set all updates data
-	result.AllUpdatesCount = allUpdates.AvailableUpdates
+	// Set all updates data (including phased)
+	result.AllUpdatesCount = len(allUpdates.PackageDetailsList)
 	result.AllUpdatesList = make([]string, len(allUpdates.PackageDetailsList))
 	result.AllUpdatesDetails = make([]UpdateInfo, len(allUpdates.PackageDetailsList))
 	for i, pkg := range allUpdates.PackageDetailsList {
@@ -188,6 +195,14 @@ func (h *Handler) GetAllUpdates(ctx context.Context, metricParams map[string]str
 	// Filter updates by type in-memory instead of calling apt multiple times
 	// This significantly reduces execution time and prevents timeout issues on ARM platforms
 	for _, pkg := range allUpdates.PackageDetailsList {
+		// Phased updates should be counted separately, not included in regular categories
+		if isPhasedUpdate(pkg) {
+			result.PhasedUpdatesCount++
+			result.PhasedUpdatesList = append(result.PhasedUpdatesList, pkg.Name)
+			result.PhasedUpdatesDetails = append(result.PhasedUpdatesDetails, pkg)
+			continue
+		}
+
 		isSecurity, err := h.isPackageOfType(ctx, pkg.Name, UpdateTypeSecurity)
 		if err != nil {
 			// If we can't determine the type, skip it for security updates
@@ -280,6 +295,44 @@ func getUpdateType(metricParams map[string]string) UpdateType {
 	return UpdateTypeAll
 }
 
+// isPhasedUpdate checks if a package update is subject to phased updates
+// Phased updates are gradually rolled out to users and should be counted separately
+func isPhasedUpdate(pkg UpdateInfo) bool {
+	// Check if the target version contains "phased" indicator
+	// This is a fallback check - ideally, isPhased would be determined during parsing
+	return strings.Contains(strings.ToLower(pkg.Target), "[phased") ||
+		strings.Contains(strings.ToLower(pkg.Name+" "+pkg.Target), "phased")
+}
+
+// getUpdateTypeAndFlagsFromExtra extracts the update type and flags from extra parameters
+// When user calls apt.updates[security], Zabbix passes "security" as first extra param
+func getUpdateTypeAndFlagsFromExtra(extraParams []string) (UpdateType, bool) {
+	updateType := UpdateTypeAll
+	includePhased := false
+
+	if len(extraParams) > 0 {
+		typeStr := strings.TrimSpace(extraParams[0])
+		switch typeStr {
+		case "security":
+			updateType = UpdateTypeSecurity
+		case "recommended":
+			updateType = UpdateTypeRecommended
+		case "optional":
+			updateType = UpdateTypeOptional
+		}
+	}
+
+	// Check for flags - look for strings like "include-phased" or "phased"
+	for _, param := range extraParams {
+		if strings.Contains(strings.ToLower(param), "phased") ||
+		   strings.Contains(strings.ToLower(param), "include") {
+			includePhased = true
+		}
+	}
+
+	return updateType, includePhased
+}
+
 // isPackageOfType checks if a package belongs to a specific update type category
 func (h *Handler) isPackageOfType(ctx context.Context, pkgName string, updateType UpdateType) (bool, error) {
 	switch updateType {
@@ -369,67 +422,105 @@ func (h *Handler) getLastAptUpdateTime() (time.Time, error) {
 	return time.Unix(int64(maxTime), 0), nil
 }
 
-// checkAPTUpdates executes 'apt list --upgradable' and parses the output
-// This method provides cleaner version strings by properly parsing the apt list format
-// Using 'apt list --upgradable' instead of 'apt-get upgrade/dist-upgrade' significantly reduces resource usage on ARM platforms
-func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*CheckResult, error) {
-	startTime := time.Now()
-
-	output, err := h.sysCalls.execCommand(ctx, "apt", "list", "--upgradable")
-	if err != nil {
-		// Check if apt command exists
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			// Exit code 100 means no upgrades available (normal)
-			if exitErr.ExitCode() == 100 {
-				return &CheckResult{
-					AvailableUpdates:    0,
-					PackageDetailsList: []UpdateInfo{},
-					CheckDurationSeconds: time.Since(startTime).Seconds(),
-				}, nil
-			}
-		}
-		return nil, fmt.Errorf("failed to execute apt list --upgradable: %w", err)
+// parsePackageLine parses a single line from 'apt list --upgradable' output (DEPRECATED)
+// Returns: package name, target version (cleaned), and whether it's a phased update
+func parsePackageLine(line string) (string, string, bool) {
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return "", "", false
 	}
 
-	// Parse the output
-	lines := strings.Split(string(output), "\n")
+	// Check for warning lines or other non-package lines
+	if strings.HasPrefix(strings.ToLower(line), "warning:") {
+		return "", "", false
+	}
+
+	parts := strings.Fields(line)
+	if len(parts) < 2 {
+		return "", "", false
+	}
+
+	// Extract package name (first part before '/')
+	pkgName := strings.Split(parts[0], "/")[0]
+
+	// Check if this line contains a phased update indicator [phased XX%]
+	isPhased := strings.Contains(strings.ToLower(line), "[phased")
+
+	// Find the field that contains the actual version (ends with ']')
+	// The version is the last field ending with ] that doesn't contain [ (which would be [phased XX%])
+	var lastFieldWithBracket string
+	for i := len(parts) - 1; i >= 0; i-- {
+		if strings.HasSuffix(parts[i], "]") && !strings.Contains(strings.ToLower(parts[i]), "[") {
+			// Found a field ending with ] that doesn't contain [ (the version)
+			lastFieldWithBracket = parts[i]
+			break
+		}
+	}
+
+	if lastFieldWithBracket == "" {
+		return "", "", false
+	}
+
+	// Extract version by removing the trailing ']' from last field
+	versionStr := strings.TrimSuffix(lastFieldWithBracket, "]")
+	version := strings.TrimSpace(versionStr)
+
+	return pkgName, version, isPhased
+}
+
+// checkAPTUpdates executes 'apt-get -s upgrade' and parses the output
+// This method uses apt-get simulation which respects phased updates by default
+// Using 'apt-get -s upgrade' instead of 'apt list --upgradable' ensures phasing is respected
+func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType, includePhased bool) (*CheckResult, error) {
+	startTime := time.Now()
+
+	// Use apt-get simulation so phasing is respected
+	// Force C locale so parsing is stable even on de_DE systems
+	args := []string{"env", "LC_ALL=C", "LANG=C", "apt-get", "-s"}
+
+	// Only exclude phased updates if NOT explicitly requested (includePhased flag)
+	if !includePhased {
+		args = append(args, "-o", "APT::Get::Always-Include-Phased-Updates=false")
+	}
+
+	args = append(args, "upgrade")
+
+	output, err := h.sysCalls.execCommand(ctx, args[0], args[1:]...)
+	if err != nil {
+		// For simulation, non-zero is still possible; but if output is empty -> treat as error
+		if len(output) == 0 {
+			return nil, fmt.Errorf("failed to execute apt-get -s upgrade: %w", err)
+		}
+		// Continue with what output we have
+	}
+
 	var updates []UpdateInfo
 
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
+	// Parse the output from apt-get -s upgrade
+	// Format: Inst <pkg> [<old>] (<new> <repo> ...)
+	re := regexp.MustCompile(`^Inst\s+(\S+)(?:\s+\[([^\]]+)\])?\s+\(([^ )]+)`)
+	sc := bufio.NewScanner(strings.NewReader(string(output)))
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" || !strings.HasPrefix(line, "Inst ") {
 			continue
 		}
 
-		// Look for lines like: "package/state version]"
-		// We want to extract the package name and target version
-		// Format: pkgname/old-state old-version new-version]
-		parts := strings.Fields(line)
-		if len(parts) < 2 {
+		m := re.FindStringSubmatch(line)
+		if len(m) < 4 {
 			continue
 		}
 
-		// The last field should be the version with trailing ']'
-		lastField := parts[len(parts)-1]
-		if !strings.HasSuffix(lastField, "]") {
-			continue
-		}
-
-		// Extract package name (first part before '/')
-		pkgName := strings.Split(parts[0], "/")[0]
-
-		// Extract version by removing the trailing ']'
-		version := strings.TrimSuffix(lastField, "]")
-		version = strings.TrimSpace(version)
+		pkgName := m[1]
+		current := strings.TrimSpace(m[2])
+		target := strings.TrimSpace(m[3])
 
 		// Filter by update type if needed
 		if updateType != UpdateTypeAll && updateType != "" {
 			isMatch, err := h.isPackageOfType(ctx, pkgName, updateType)
 			if err != nil {
 				// If we can't determine the type, skip this package for filtered queries
-				if updateType != UpdateTypeAll {
-					continue
-				}
+				continue
 			}
 			if !isMatch {
 				continue
@@ -437,9 +528,27 @@ func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType) (*
 		}
 
 		updates = append(updates, UpdateInfo{
-			Name:   pkgName,
-			Target: version,
+			Name:    pkgName,
+			Current: current,
+			Target:  target,
 		})
+	}
+
+	// Filter updates by type if needed (for security, recommended, optional)
+	if updateType != UpdateTypeAll && updateType != "" {
+		filteredUpdates := []UpdateInfo{}
+		for _, pkg := range updates {
+			isMatch, err := h.isPackageOfType(ctx, pkg.Name, updateType)
+			if err != nil {
+				// If we can't determine the type, skip this package
+				continue
+			}
+			if !isMatch {
+				continue
+			}
+			filteredUpdates = append(filteredUpdates, pkg)
+		}
+		updates = filteredUpdates
 	}
 
 	result := &CheckResult{

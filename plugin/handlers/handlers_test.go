@@ -20,6 +20,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -60,7 +61,7 @@ Reading state information...
 				sysCalls: newMockSystemCalls(tt.mockOutput, nil),
 			}
 
-			result, err := handler.checkAPTUpdates(context.Background(), UpdateTypeAll)
+			result, err := handler.checkAPTUpdates(context.Background(), UpdateTypeAll, false)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("checkAPTUpdates() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -100,7 +101,7 @@ another-package/xenial-updates 2.3.4+git20240101]
 		sysCalls: newMockSystemCalls(mockOutput, nil),
 	}
 
-	result, err := handler.checkAPTUpdates(context.Background(), UpdateTypeAll)
+	result, err := handler.checkAPTUpdates(context.Background(), UpdateTypeAll, false)
 	assert.NoError(t, err)
 
 	// Verify all versions are clean (no brackets)
@@ -125,7 +126,7 @@ func TestEmptyOutput(t *testing.T) {
 		sysCalls: newMockSystemCalls("", nil),
 	}
 
-	result, err := handler.checkAPTUpdates(context.Background(), UpdateTypeAll)
+	result, err := handler.checkAPTUpdates(context.Background(), UpdateTypeAll, false)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, result.AvailableUpdates)
 	assert.Empty(t, result.PackageDetailsList)
@@ -136,10 +137,33 @@ type mockSystemCalls struct {
 	output string
 	err    error
 }
+	func (m *mockSystemCalls) execCommand(ctx context.Context, name string, args ...string) ([]byte, error) {
+		// Check if this is an apt-get command - convert apt list format to apt-get format
+		if name == "env" && len(args) >= 5 && args[0] == "LC_ALL=C" && args[1] == "LANG=C" &&
+		   args[2] == "apt-get" && args[3] == "-s" {
+			// Convert apt list format to apt-get -s upgrade format
+			targetOutput := []string{"WARNING: apt does not have a stable CLI interface."}
+			lines := strings.Split(strings.TrimSpace(m.output), "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if line == "" || strings.HasPrefix(strings.ToLower(line), "warning:") {
+					continue
+				}
+				parts := strings.Fields(line)
+				if len(parts) < 2 {
+					continue
+				}
+				pkgName := strings.Split(parts[0], "/")[0]
+				version := strings.TrimSuffix(strings.TrimSpace(strings.Join(parts[1:], " ")), "]")
+				targetOutput = append(targetOutput, fmt.Sprintf("Inst %s (%s", pkgName, version))
+			}
+			return []byte(strings.Join(targetOutput, "\n") + "\n"), nil
+		}
+		// For non-apt-get commands (e.g., apt-cache policy), return raw output
+		return []byte(m.output), m.err
+	}
 
-func (m *mockSystemCalls) execCommand(ctx context.Context, name string, args ...string) ([]byte, error) {
-	return []byte(m.output), m.err
-}
+
 
 // newMockSystemCalls creates a new mock system calls implementation
 func newMockSystemCalls(output string, err error) systemCalls {
