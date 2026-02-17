@@ -9,7 +9,7 @@ zabbix_export:
       name: 'apt updates by Zabbix agent 2'
       vendor:
         name: Aecroo
-        version: 7.4-0
+        version: 7.4-1
       groups:
         - name: Templates/Applications
       items:
