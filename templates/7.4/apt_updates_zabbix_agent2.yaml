@@ -178,7 +178,7 @@ zabbix_export:
           tags:
             - tag: component
               value: updates
-        - uuid: 388aeba4-b529-4e51-95d6-bddb4d5b86eb
+        - uuid: 388aeba4b5294e5195d6bddb4d5b86eb
           name: 'updates phased count'
           type: DEPENDENT
           key: updates.phased_updates_count
@@ -193,7 +193,7 @@ zabbix_export:
           tags:
             - tag: component
               value: updates
-        - uuid: 31fcf587-e5d8-41e2-b1b2-6ab636ad469f
+        - uuid: 31fcf587e5d841e2b1b26ab636ad469f
           name: 'updates phased list'
           type: DEPENDENT
           key: updates.phased_updates_list
@@ -209,7 +209,7 @@ zabbix_export:
           tags:
             - tag: component
               value: updates
-        - uuid: 9bdb31ad-a659-460d-874e-6fee5d71c460
+        - uuid: 9bdb31ada659460d874e6fee5d71c460
           name: 'updates phased details'
           type: DEPENDENT
           key: updates.phased_updates_details
