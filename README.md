@@ -74,6 +74,7 @@ sudo -u zabbix /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates --version
 Zabbix APTUpdates plugin
 Version 1.0.0, built with go1.24.12
 Protocol version 6.4.0
+```
 
 ### Step 4: Restart Zabbix Agent
 
