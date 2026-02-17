@@ -15,12 +15,12 @@ all: build
 
 build: $(NAME)
 
-$(NAME): main.go go.mod go.sum
+$(NAME): src/main.go go.mod go.sum
 	@echo "Building $(NAME) v$(VERSION) for $(GOOS)/$(GOARCH)..."
 	@if [ -n "$(GOARM)" ]; then \
-		GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) go build -o $(BUILD_DIR)/$(NAME)-$(GOOS)-$(GOARCH)v$(GOARM); \
+		GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) go build -o $(BUILD_DIR)/$(NAME)-$(GOOS)-$(GOARCH)v$(GOARM) ./src; \
 	else \
-		GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BUILD_DIR)/$(NAME)-$(GOOS)-$(GOARCH); \
+		GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BUILD_DIR)/$(NAME)-$(GOOS)-$(GOARCH) ./src; \
 	fi
 	@echo "Build complete: $(BUILD_DIR)/$(NAME)-$(GOOS)-$(GOARCH)$(if $(GOARM),v$(GOARM),)"
 

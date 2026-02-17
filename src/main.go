@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/netdata/zabbix-agent-apt-updates/plugin"
+	"github.com/netdata/zabbix-agent-apt-updates/src/plugin"
 	"golang.zabbix.com/sdk/errs"
 	sdkplugin "golang.zabbix.com/sdk/plugin"
 	"golang.zabbix.com/sdk/plugin/flag"

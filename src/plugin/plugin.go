@@ -22,7 +22,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/netdata/zabbix-agent-apt-updates/plugin/handlers"
+	"github.com/netdata/zabbix-agent-apt-updates/src/plugin/handlers"
 	"golang.zabbix.com/sdk/errs"
 	"golang.zabbix.com/sdk/log"
 	"golang.zabbix.com/sdk/metric"

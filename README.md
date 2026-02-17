@@ -173,18 +173,19 @@ The template file is located at `templates/7.4/apt_updates_zabbix_agent2.yaml`.
 
 ```
 zabbix_agent2-apt-updates/
-├── main.go                 # Main plugin entry point
+├── src/                     # Source code directory
+│   ├── main.go              # Main plugin entry point
+│   └── plugin/              # Official Zabbix Go plugin implementation
+│       ├── config.go        # Configuration management
+│       ├── handlers/        # Metric collection logic
+│       │   └── handlers.go
+│       ├── params/          # Parameter definitions
+│       │   └── params.go
+│       └── plugin.go        # Plugin registration and entry point
 ├── go.mod                  # Go module definition
 ├── go.sum                  # Go dependencies checksums
 ├── apt-updates.conf        # Plugin configuration file
-├── plugin/                 # Official Zabbix Go plugin implementation
-│   ├── config.go           # Configuration management
-│   ├── handlers/          # Metric collection logic
-│   │   └── handlers.go
-│   ├── params/            # Parameter definitions
-│   │   └── params.go
-│   └── plugin.go           # Plugin registration and entry point
-├── packages/              # Pre-built binaries
+├── dist/                   # Pre-built binaries (created during build)
 │   ├── zabbix-agent2-plugin-apt-updates-linux-amd64
 │   ├── zabbix-agent2-plugin-apt-updates-linux-arm64
 │   └── zabbix-agent2-plugin-apt-updates-linux-armv7
@@ -213,7 +214,7 @@ git clone http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates.git
 cd zabbix-agent2-apt-updates
 
 # Build for all platforms using Docker
-docker-compose up builder
+docker compose up builder
 
 # Artifacts will be in the dist/ directory
 ls -lh dist/
@@ -231,7 +232,7 @@ cd zabbix-agent2-apt-updates
 # Build for current platform (Linux AMD64)
 make build
 
-# Artifacts will be in the packages/ directory
+# Artifacts will be in the dist/ directory
 ```
 
 ### Cross-compilation
@@ -387,7 +388,7 @@ git clone http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates.git
 cd zabbix-agent2-apt-updates
 
 # Build and start the Zabbix Agent with the plugin
-docker-compose up -d agent
+docker compose up -d agent
 ```
 
 ### Using the Builder Image
@@ -396,7 +397,7 @@ To build the plugin for multiple platforms:
 
 ```bash
 # Build all platform binaries
-docker-compose up builder
+docker compose up builder
 
 # Artifacts will be available in dist/
 ls -lh dist/
