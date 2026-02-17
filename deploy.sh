@@ -4,8 +4,26 @@ set -e
 echo "=== Zabbix Agent 2 APT Updates Plugin Deployment ==="
 echo ""
 
-# Check if running as root
-if [ "$EUID" -ne 0 ]; then
+# Parse command-line arguments for Ansible integration
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --plugin-dir)
+            PLUGIN_DIR="$2"
+            shift 2
+            ;;
+        --config-dir)
+            CONFIG_DIR="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
+# Check if running as root (only when not called by Ansible)
+if [ "$EUID" -ne 0 ] && [ -z "${PLUGIN_DIR}" ]; then
     echo "Error: This script must be run as root or with sudo."
     exit 1
 fi
@@ -39,14 +57,14 @@ esac
 echo "Detected architecture: $ARCH"
 
 # Base URL for releases (update this to your actual release URL)
-BASE_URL="http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v0.7.0"
+BASE_URL="http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v0.8.0"
 BINARY_URL="${BASE_URL}/${BINARY_NAME}"
 CONFIG_URL="http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/raw/branch/master/apt-updates.conf"
 
 # Installation paths
-INSTALL_DIR="/etc/zabbix"
+INSTALL_DIR=${PLUGIN_DIR:-/etc/zabbix}
 PLUGIN_PATH="${INSTALL_DIR}/${BINARY_NAME}"
-CONFIG_DIR="/etc/zabbix/zabbix_agent2.d"
+CONFIG_DIR=${CONFIG_DIR:-/etc/zabbix/zabbix_agent2.d}
 CONFIG_FILE="${CONFIG_DIR}/apt-updates.conf"
 
 # Create directories
@@ -54,20 +72,53 @@ echo "Creating installation directories..."
 mkdir -p "$INSTALL_DIR"
 mkdir -p "$CONFIG_DIR"
 
+# Try to remove existing binary forcefully before download
+if [ -f "$PLUGIN_PATH" ]; then
+    echo "Removing existing plugin binary..."
+    rm -f "$PLUGIN_PATH" || {
+        # If regular remove fails, try with fuser
+        if command -v fuser &> /dev/null; then
+            fuser -k "$PLUGIN_PATH" 2>/dev/null || true
+            sleep 1
+            rm -f "$PLUGIN_PATH" || true
+        fi
+    }
+fi
+
+# Stop Zabbix Agent 2 service if running
+if systemctl list-unit-files | grep -q zabbix-agent2; then
+    if systemctl is-active --quiet zabbix-agent2 2>/dev/null; then
+        echo "Zabbix Agent 2 service is running. Stopping to update plugin..."
+        systemctl stop zabbix-agent2 || {
+            echo "Warning: Could not stop Zabbix Agent 2, but continuing anyway"
+        }
+    fi
+fi
+
 # Download binary
 echo "Downloading plugin binary for $ARCH..."
+# Create a temporary installation directory to avoid file busy issues completely
+TMP_INSTALL_DIR="/tmp/zabbix-plugin-install-$$"
+mkdir -p "$TMP_INSTALL_DIR"
+TEMP_BINARY="${TMP_INSTALL_DIR}/${BINARY_NAME}"
+
 if command -v wget &> /dev/null; then
-    wget -q "$BINARY_URL" -O "$PLUGIN_PATH"
+    wget -q "$BINARY_URL" -O "$TEMP_BINARY"
 elif command -v curl &> /dev/null; then
-    curl -sL "$BINARY_URL" -o "$PLUGIN_PATH"
+    curl -sL "$BINARY_URL" -o "$TEMP_BINARY"
 else
     echo "Error: Neither wget nor curl is available."
     exit 1
 fi
 
-# Set executable permissions
-echo "Setting permissions..."
-chmod +x "$PLUGIN_PATH"
+# Set executable permissions on the temporary binary
+echo "Setting permissions on downloaded plugin..."
+chmod +x "$TEMP_BINARY"
+
+# Move temporary installation to final location after all downloads complete
+echo "Moving plugin to final installation directory..."
+mv -f "$TMP_INSTALL_DIR/${BINARY_NAME}" "$PLUGIN_PATH" 2>/dev/null || mv -f "$TEMP_BINARY" "$PLUGIN_PATH"
+rm -rf "$TMP_INSTALL_DIR"
 
 # Download configuration file
 echo "Downloading configuration file..."
@@ -119,15 +170,21 @@ echo "Installed files:"
 echo "  Binary: $PLUGIN_PATH"
 echo "  Config: $CONFIG_FILE"
 echo ""
-echo "Next steps:"
-echo "  1. Restart Zabbix Agent 2: sudo systemctl restart zabbix-agent2"
-echo "  2. Verify installation: sudo -u zabbix $PLUGIN_PATH --version"
-echo ""
 
-# Check if zabbix-agent2 service exists and suggest restart
+# Restart Zabbix Agent 2 service if it was stopped during update
 if systemctl list-unit-files | grep -q zabbix-agent2; then
-    echo "Note: Zabbix Agent 2 service detected. Consider running:"
-    echo "  sudo systemctl restart zabbix-agent2"
+    if ! systemctl is-active --quiet zabbix-agent2 2>/dev/null; then
+        echo "Starting Zabbix Agent 2 service after plugin update..."
+        systemctl start zabbix-agent2 || {
+            echo "Warning: Could not start Zabbix Agent 2"
+        }
+    else
+        # If it was already running (not stopped by us), restart to load new plugin
+        echo "Restarting Zabbix Agent 2 service to load updated plugin..."
+        systemctl restart zabbix-agent2 || {
+            echo "Warning: Could not restart Zabbix Agent 2"
+        }
+    fi
 fi
 
 echo "Deployment successful!"
