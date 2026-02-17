@@ -57,6 +57,7 @@ These items extract numeric counts from the JSON response using JSONPath preproc
 | `updates.security_updates_count` | Dependent | `$.security_updates_count` | Number of security updates available |
 | `updates.recommended_updates_count` | Dependent | `$.recommended_updates_count` | Number of recommended updates available |
 | `updates.optional_updates_count` | Dependent | `$.optional_updates_count` | Number of optional updates available |
+| `updates.phased_updates_count` | Dependent | `$.phased_updates_count` | Number of phased updates available (NEW in v0.7.0+) |
 
 ### Dependent Items - Lists
 
