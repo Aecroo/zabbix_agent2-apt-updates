@@ -176,7 +176,7 @@ func (h *Handler) GetAllUpdates(ctx context.Context, metricParams map[string]str
 	if len(deferredPackages) > 0 && deferredPackages[0] != nil {
 		deferredPackagesMap = deferredPackages[0]
 	}
-	allUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeAll, true, deferredPackagesMap)
+	allUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeAll, true, []map[string]bool{deferredPackagesMap}...)
 	if err != nil {
 		return nil, errs.Wrap(err, "failed to check APT updates for 'all'")
 	}
