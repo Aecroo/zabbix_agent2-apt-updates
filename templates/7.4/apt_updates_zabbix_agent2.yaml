@@ -178,6 +178,53 @@ zabbix_export:
           tags:
             - tag: component
               value: updates
+        - uuid: 9f1d8b2c1a3b4d5e6f7g8h9i0j1k2l3m
+          name: 'updates phased count'
+          type: DEPENDENT
+          key: updates.phased_updates_count
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.phased_updates_count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+        - uuid: abc123def456789ghi0j1k2l3m4n5o6p7q
+          name: 'updates phased list'
+          type: DEPENDENT
+          key: updates.phased_updates_list
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.phased_updates_list
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+        - uuid: 2c0d4e6f8g9h0i1j2k3l4m5n6o7p8q9r
+          name: 'updates phased details'
+          type: DEPENDENT
+          key: updates.phased_updates_details
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.phased_updates_details
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
         - uuid: 6c0c09f6c26d469582a9c7d6d3707117
           name: 'updates security count'
           type: DEPENDENT
