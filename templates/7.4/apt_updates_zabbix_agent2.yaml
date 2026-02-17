@@ -9,25 +9,10 @@ zabbix_export:
       name: 'apt updates by Zabbix agent 2'
       vendor:
         name: Aecroo
-        version: 7.4-1
+        version: 7.4-0
       groups:
         - name: Templates/Applications
       items:
-        - uuid: 9f1d8b2c1a3b4d5e6f7g8h9i0j1k2l3m
-          name: 'updates phased count'
-          type: DEPENDENT
-          key: updates.phased_updates_count
-          preprocessing:
-            - type: JSONPATH
-              parameters:
-                - $.phased_updates_count
-              error_handler: CUSTOM_VALUE
-              error_handler_params: '0'
-          master_item:
-            key: updates.get
-          tags:
-            - tag: component
-              value: updates
         - uuid: 7da978c200c240e1bfa6c6ad3875484e
           name: 'updates all count'
           type: DEPENDENT
@@ -43,26 +28,19 @@ zabbix_export:
           tags:
             - tag: component
               value: updates
-        - uuid: 2c0d4e6f8g9h0i1j2k3l4m5n6o7p8q9r
-          name: 'updates phased details'
-          type: DEPENDENT
-          key: updates.phased_updates_details
-          value_type: TEXT
-          preprocessing:
-            - type: JSONPATH
-              parameters:
-                - $.phased_updates_details
-              error_handler: CUSTOM_VALUE
-              error_handler_params: '[]'
-          master_item:
-            key: updates.get
-          tags:
-            - tag: component
-              value: updates
+          triggers:
+            - uuid: cb4ad1af4f0b474bb8e7c1f811ba95f0
+              expression: 'last(/apt updates by Zabbix agent 2/updates.all_updates_count)<>0'
+              name: 'Updates available'
+              priority: INFO
+              dependencies:
+                - name: 'Security updates available'
+                  expression: 'last(/apt updates by Zabbix agent 2/updates.security_updates_count)<>0'
         - uuid: 2b864937bed04cd89b331768e742959e
           name: 'updates all details'
           type: DEPENDENT
           key: updates.all_updates_details
+          history: 1d
           value_type: TEXT
           preprocessing:
             - type: JSONPATH
@@ -79,6 +57,7 @@ zabbix_export:
           name: 'updates all list'
           type: DEPENDENT
           key: updates.all_updates_list
+          history: 1d
           value_type: TEXT
           preprocessing:
             - type: JSONPATH
@@ -96,7 +75,6 @@ zabbix_export:
           type: DEPENDENT
           key: updates.check_duration_seconds
           value_type: FLOAT
-          trends: '0'
           units: s
           preprocessing:
             - type: JSONPATH
@@ -109,10 +87,10 @@ zabbix_export:
             - tag: component
               value: updates
         - uuid: 753f6904fdd44688b946d8b10d2aaa36
-          name: 'get updates raw'
+          name: 'get updates'
           key: updates.get
           delay: 15m
-          history: 1h
+          history: '0'
           value_type: TEXT
           timeout: 10m
           tags:
@@ -122,13 +100,15 @@ zabbix_export:
           name: 'last apt update time'
           type: DEPENDENT
           key: updates.last_apt_update_time
-          trends: '0'
           units: unixtime
           preprocessing:
             - type: JSONPATH
               parameters:
                 - $.last_apt_update_time
               error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
           master_item:
             key: updates.get
           tags:
@@ -168,6 +148,7 @@ zabbix_export:
           name: 'updates recommended details'
           type: DEPENDENT
           key: updates.recommended_updates_details
+          history: 1d
           value_type: TEXT
           preprocessing:
             - type: JSONPATH
@@ -184,6 +165,7 @@ zabbix_export:
           name: 'updates recommended list'
           type: DEPENDENT
           key: updates.recommended_updates_list
+          history: 1d
           value_type: TEXT
           preprocessing:
             - type: JSONPATH
@@ -211,10 +193,16 @@ zabbix_export:
           tags:
             - tag: component
               value: updates
+          triggers:
+            - uuid: e2a3c1ca53b84987a7e683b6f1d7fb71
+              expression: 'last(/apt updates by Zabbix agent 2/updates.security_updates_count)<>0'
+              name: 'Security updates available'
+              priority: WARNING
         - uuid: 14b39c04ca0b4029adec0535a9a58094
           name: 'updates security details'
           type: DEPENDENT
           key: updates.security_updates_details
+          history: 1d
           value_type: TEXT
           preprocessing:
             - type: JSONPATH
@@ -231,6 +219,7 @@ zabbix_export:
           name: 'updates security list'
           type: DEPENDENT
           key: updates.security_updates_list
+          history: 1d
           value_type: TEXT
           preprocessing:
             - type: JSONPATH
