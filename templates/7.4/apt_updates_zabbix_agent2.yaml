@@ -259,6 +259,22 @@ zabbix_export:
           tags:
             - tag: component
               value: updates
+        triggers:
+          - uuid: aaa111bbb222ccc333ddd444eee555fff666ggg777
+            expression: 'last(/apt updates by Zabbix agent 2/updates.security_updates_count)<>0'
+            name: 'Security updates available'
+            priority: WARNING
+          - uuid: bbb111ccc222ddd333444555fff666777888ggg999
+            expression: 'last(/apt updates by Zabbix agent 2/updates.all_updates_count)<>0'
+            name: 'Updates available'
+            priority: INFO
+            dependencies:
+              - name: 'Security updates available'
+                expression: 'last(/apt updates by Zabbix agent 2/updates.security_updates_count)<>0'
+          - uuid: ccc111ddd222eee333444555fff666777888ggg999
+            expression: 'last(/apt updates by Zabbix agent 2/updates.phased_updates_count)>0'
+            name: 'Phased updates detected'
+            priority: INFO
       tags:
         - tag: class
           value: software
