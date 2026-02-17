@@ -44,21 +44,6 @@ zabbix_export:
           tags:
             - tag: component
               value: updates
-        - uuid: 7da978c200c240e1bfa6c6ad3875484e
-          name: 'updates all count'
-          type: DEPENDENT
-          key: updates.all_updates_count
-          preprocessing:
-            - type: JSONPATH
-              parameters:
-                - $.all_updates_count
-              error_handler: CUSTOM_VALUE
-              error_handler_params: '0'
-          master_item:
-            key: updates.get
-          tags:
-            - tag: component
-              value: updates
         - uuid: 2c0d4e6f8g9h0i1j2k3l4m5n6o7p8q9r
           name: 'updates phased details'
           type: DEPENDENT
@@ -70,6 +55,21 @@ zabbix_export:
                 - $.phased_updates_details
               error_handler: CUSTOM_VALUE
               error_handler_params: '[]'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
+        - uuid: 7da978c200c240e1bfa6c6ad3875484e
+          name: 'updates all count'
+          type: DEPENDENT
+          key: updates.all_updates_count
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.all_updates_count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
           master_item:
             key: updates.get
           tags:
@@ -259,22 +259,22 @@ zabbix_export:
           tags:
             - tag: component
               value: updates
-        triggers:
-          - uuid: aaa111bbb222ccc333ddd444eee555fff666ggg777
-            expression: 'last(/apt updates by Zabbix agent 2/updates.security_updates_count)<>0'
-            name: 'Security updates available'
-            priority: WARNING
-          - uuid: bbb111ccc222ddd333444555fff666777888ggg999
-            expression: 'last(/apt updates by Zabbix agent 2/updates.all_updates_count)<>0'
-            name: 'Updates available'
-            priority: INFO
-            dependencies:
-              - name: 'Security updates available'
-                expression: 'last(/apt updates by Zabbix agent 2/updates.security_updates_count)<>0'
-          - uuid: ccc111ddd222eee333444555fff666777888ggg999
-            expression: 'last(/apt updates by Zabbix agent 2/updates.phased_updates_count)>0'
-            name: 'Phased updates detected'
-            priority: INFO
+      triggers:
+        - uuid: aaa111bbb222ccc333ddd444eee555fff666ggg777
+          expression: 'last(/apt updates by Zabbix agent 2/updates.security_updates_count)<>0'
+          name: 'Security updates available'
+          priority: WARNING
+        - uuid: bbb111ccc222ddd333444555fff666777888ggg999
+          expression: 'last(/apt updates by Zabbix agent 2/updates.all_updates_count)<>0'
+          name: 'Updates available'
+          priority: INFO
+          dependencies:
+            - name: 'Security updates available'
+              expression: 'last(/apt updates by Zabbix agent 2/updates.security_updates_count)<>0'
+        - uuid: ccc111ddd222eee333444555fff666777888ggg999
+          expression: 'last(/apt updates by Zabbix agent 2/updates.phased_updates_count)>0'
+          name: 'Phased updates detected'
+          priority: INFO
       tags:
         - tag: class
           value: software
