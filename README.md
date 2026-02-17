@@ -103,6 +103,10 @@ Example JSONPath expressions:
 - All updates count: `.all_updates_count`
 - Security updates list: `.security_updates_list`
 - Package details: `.all_updates_details[*].name`
+- Phased updates (NEW in v0.8.0):
+  - Count: `.phased_updates_count`
+  - List: `.phased_updates_list`
+  - Details: `.phased_updates_details`
 
 ### Step 7: Create Triggers (Optional)
 

@@ -28,6 +28,22 @@ zabbix_export:
           tags:
             - tag: component
               value: updates
+        - uuid: abc123def456789ghi0j1k2l3m4n5o6p7q
+          name: 'updates phased list'
+          type: DEPENDENT
+          key: updates.phased_updates_list
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.phased_updates_list
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+          master_item:
+            key: updates.get
+          tags:
+            - tag: component
+              value: updates
         - uuid: 7da978c200c240e1bfa6c6ad3875484e
           name: 'updates all count'
           type: DEPENDENT
