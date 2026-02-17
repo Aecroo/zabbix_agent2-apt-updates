@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-02-17
+
+### Added
+- **FOSS Release**: Official open-source release on GitHub
+- Improved error handling and logging
+
+### Changed
+- **Project Structure**: Organized source code into `src/` directory for better maintainability
+- **Version**: Major version bump to 1.0.0 indicating production stability
+- All imports updated to use `github.com/netdata/zabbix-agent-apt-updates/src/plugin`
+
+### Fixed
+- Import path resolution in Go module system
+- Build process compatibility with src/ directory structure
+
 ## [Unreleased]
 
 ## [0.8.0] - 2026-02-17

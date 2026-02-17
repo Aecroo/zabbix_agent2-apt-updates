@@ -8,7 +8,7 @@ This directory contains the Zabbix template (`apt_updates_zabbix_agent2.yaml`) f
 
 - **Zabbix version**: 7.4
 - **Template version**: 7.4-0
-- **Plugin version**: 0.7.0+
+- **Plugin version**: 1.0.0+
 - **Operating systems**: Ubuntu 20.04 LTS+, Debian 10+
 
 ### Template Features
@@ -271,7 +271,7 @@ For issues and questions related to this template:
 
 - **Project repository**: http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates
 - **Documentation**: See the main [README.md](../../README.md) in the project root
-- **Plugin version**: Ensure your plugin is version 0.7.0 or later for full compatibility
+- **Plugin version**: Ensure your plugin is version 1.0.0 or later for full compatibility
 
 ## Related Documentation
 

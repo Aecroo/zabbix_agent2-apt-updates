@@ -57,7 +57,7 @@ esac
 echo "Detected architecture: $ARCH"
 
 # Base URL for releases (update this to your actual release URL)
-BASE_URL="http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v0.8.0"
+BASE_URL="http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v1.0.0"
 BINARY_URL="${BASE_URL}/${BINARY_NAME}"
 CONFIG_URL="http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/raw/branch/master/apt-updates.conf"
 

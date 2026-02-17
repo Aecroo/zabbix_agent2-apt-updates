@@ -1,7 +1,7 @@
 # Zabbix Agent 2 APT Updates Plugin
 
 [![Docker](https://img.shields.io/badge/Docker-Supported-blue)](docker-compose.yml)
-[![Version](https://img.shields.io/badge/version-0.8.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](CHANGELOG.md)
 
 A monitoring plugin for Zabbix Agent 2 that checks available package updates on Debian/Ubuntu systems using APT.
 
@@ -43,7 +43,7 @@ Download the latest release from our Git repository:
 sudo mkdir -p /usr/libexec/zabbix/
 
 # Download the binary (Ubuntu/Debian x86_64)
-wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v0.8.0/zabbix-agent2-plugin-apt-updates-linux-amd64 \
+wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v1.0.0/zabbix-agent2-plugin-apt-updates-linux-amd64 \
   -O /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
 
 # Make it executable
@@ -72,7 +72,7 @@ sudo -u zabbix /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates --version
 
 # Example output:
 Zabbix APTUpdates plugin
-Version 0.8.0, built with go1.24.12
+Version 1.0.0, built with go1.24.12
 Protocol version 6.4.0
 
 ### Step 4: Restart Zabbix Agent
@@ -103,7 +103,7 @@ Example JSONPath expressions:
 - All updates count: `.all_updates_count`
 - Security updates list: `.security_updates_list`
 - Package details: `.all_updates_details[*].name`
-- Phased updates (NEW in v0.8.0):
+- Phased updates (NEW in v0.7.0):
   - Count: `.phased_updates_count`
   - List: `.phased_updates_list`
   - Details: `.phased_updates_details`
@@ -118,7 +118,7 @@ When new versions are released, simply download and replace the binary:
 
 ```bash
 # Download the new version
-sudo wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v0.8.0/zabbix-agent2-plugin-apt-updates-linux-amd64 \
+sudo wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v1.0.0/zabbix-agent2-plugin-apt-updates-linux-amd64 \
   -O /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
 
 # Restart Zabbix Agent
