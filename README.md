@@ -108,10 +108,6 @@ Example JSONPath expressions:
   - List: `.phased_updates_list`
   - Details: `.phased_updates_details`
 
-### Step 7: Create Triggers (Optional)
-
-For trigger configurations, see the [template documentation](templates/7.4/README.md) which includes pre-configured triggers for security, recommended, and optional updates.
-
 ### Updating the Plugin
 
 When new versions are released, simply download and replace the binary:

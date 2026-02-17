@@ -68,6 +68,7 @@ These items extract package lists from the JSON response:
 | `updates.security_updates_list` | Dependent | `$.security_updates_list` | Array of security update package names |
 | `updates.recommended_updates_list` | Dependent | `$.recommended_updates_list` | Array of recommended update package names |
 | `updates.optional_updates_list` | Dependent | `$.optional_updates_list` | Array of optional update package names |
+| `updates.phased_updates_list` | Dependent | `$.phased_updates_list` | Array of phased update package names (NEW in v0.7.0+) |
 
 ### Dependent Items - Details
 
@@ -79,6 +80,7 @@ These items extract detailed information including versions and repository sourc
 | `updates.security_updates_details` | Dependent | `$.security_updates_details` | Array of objects with full details for security updates |
 | `updates.recommended_updates_details` | Dependent | `$.recommended_updates_details` | Array of objects with full details for recommended updates |
 | `updates.optional_updates_details` | Dependent | `$.optional_updates_details` | Array of objects with full details for optional updates |
+| `updates.phased_updates_details` | Dependent | `$.phased_updates_details` | Array of objects with full details for phased updates (NEW in v0.7.0+) |
 
 ### Monitoring Items
 
