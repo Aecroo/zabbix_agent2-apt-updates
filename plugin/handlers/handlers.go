@@ -160,14 +160,39 @@ func (h *Handler) GetAllUpdates(ctx context.Context, metricParams map[string]str
 	// Track start time for duration calculation
 	startTime := time.Now()
 
-	// Get all updates including phased ones - this is the most expensive operation
-	allUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeAll, true)
+	// First pass: get all updates with phased updates excluded (includePhased=false)
+	// This will parse the "deferred due to phasing" section from apt-get output
+	// Pass a slice with nil so checkAPTUpdates can populate it with detected phased packages
+	deferredPackages := []map[string]bool{nil}
+	_, err := h.checkAPTUpdates(ctx, UpdateTypeAll, false, deferredPackages...)
+	if err != nil {
+		return nil, errs.Wrap(err, "failed to check APT updates for first pass")
+	}
+
+
+	// Second pass: get all updates including phased ones
+	// Pass the deferred packages map from the first pass so IsPhased can be set correctly
+	var deferredPackagesMap map[string]bool = nil
+	if len(deferredPackages) > 0 && deferredPackages[0] != nil {
+		deferredPackagesMap = deferredPackages[0]
+	}
+	allUpdates, err := h.checkAPTUpdates(ctx, UpdateTypeAll, true, deferredPackagesMap)
 	if err != nil {
 		return nil, errs.Wrap(err, "failed to check APT updates for 'all'")
 	}
 
 	// Calculate check duration
 	result.CheckDurationSeconds = time.Since(startTime).Seconds()
+
+	// Initialize slice fields to empty arrays (not nil) for consistent JSON output
+	result.PhasedUpdatesList = []string{}
+	result.PhasedUpdatesDetails = []UpdateInfo{}
+	result.SecurityUpdatesList = []string{}
+	result.SecurityUpdatesDetails = []UpdateInfo{}
+	result.RecommendedUpdatesList = []string{}
+	result.RecommendedUpdatesDetails = []UpdateInfo{}
+	result.OptionalUpdatesList = []string{}
+	result.OptionalUpdatesDetails = []UpdateInfo{}
 
 	// Get last apt update time from package lists (also available in allUpdates)
 	if allUpdates.LastAptUpdateTime != 0 {
@@ -298,8 +323,11 @@ func getUpdateType(metricParams map[string]string) UpdateType {
 // isPhasedUpdate checks if a package update is subject to phased updates
 // Phased updates are gradually rolled out to users and should be counted separately
 func isPhasedUpdate(pkg UpdateInfo) bool {
-	// Check if the target version contains "phased" indicator
-	// This is a fallback check - ideally, isPhased would be determined during parsing
+	// First check the IsPhased field (set during parsing)
+	if pkg.IsPhased {
+		return true
+	}
+	// Fallback: Check if the target version contains "phased" indicator
 	return strings.Contains(strings.ToLower(pkg.Target), "[phased") ||
 		strings.Contains(strings.ToLower(pkg.Name+" "+pkg.Target), "phased")
 }
@@ -471,15 +499,17 @@ func parsePackageLine(line string) (string, string, bool) {
 // checkAPTUpdates executes 'apt-get -s upgrade' and parses the output
 // This method uses apt-get simulation which respects phased updates by default
 // Using 'apt-get -s upgrade' instead of 'apt list --upgradable' ensures phasing is respected
-func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType, includePhased bool) (*CheckResult, error) {
+func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType, includePhased bool, deferredPackages ...map[string]bool) (*CheckResult, error) {
 	startTime := time.Now()
 
 	// Use apt-get simulation so phasing is respected
 	// Force C locale so parsing is stable even on de_DE systems
 	args := []string{"env", "LC_ALL=C", "LANG=C", "apt-get", "-s"}
 
-	// Only exclude phased updates if NOT explicitly requested (includePhased flag)
-	if !includePhased {
+	// Explicitly set phased updates behavior
+	if includePhased {
+		args = append(args, "-o", "APT::Get::Always-Include-Phased-Updates=true")
+	} else {
 		args = append(args, "-o", "APT::Get::Always-Include-Phased-Updates=false")
 	}
 
@@ -495,11 +525,61 @@ func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType, in
 	}
 
 	var updates []UpdateInfo
+	deferredPhasedPackages := make(map[string]bool)
+	var sc *bufio.Scanner
+
+	// If no pre-populated map was provided, parse the "deferred due to phasing" section first
+	if len(deferredPackages) == 0 || deferredPackages[0] == nil {
+		// Process output line by line to collect all deferred packages
+		sc = bufio.NewScanner(strings.NewReader(string(output)))
+		foundPhasingHeader := false
+
+		for sc.Scan() {
+			line := strings.TrimSpace(sc.Text())
+
+			// Check if we found the "deferred due to phasing" header line
+			if strings.Contains(line, "deferred due to phasing:") {
+				foundPhasingHeader = true
+				continue
+			}
+
+			// If we found the header, collect package names from subsequent lines
+			if foundPhasingHeader && line != "" {
+				// Skip summary lines like "0 upgraded", "1 newly installed", etc.
+				summaryRe := regexp.MustCompile(`^\d+ (upgraded|newly installed|to remove)`)
+				if !summaryRe.MatchString(line) {
+					// Collect all package names from this line
+					packageNames := strings.Fields(line)
+					for _, pkgName := range packageNames {
+						deferredPhasedPackages[pkgName] = true
+					}
+				}
+			}
+
+			// Stop when we reach the summary line with numbers + "upgraded"
+			if foundPhasingHeader && regexp.MustCompile(`^\d+ upgraded`).MatchString(line) {
+				break
+			}
+		}
+
+
+		// Store for return if this is the first pass and we found deferred packages
+		if len(deferredPhasedPackages) > 0 {
+			// Populate the caller's slice element instead of reassigning (so changes propagate back)
+			if len(deferredPackages) == 0 {
+				// No parameters were passed, create a new slice
+				deferredPackages = []map[string]bool{deferredPhasedPackages}
+			} else {
+				// A slice with nil at index 0 was passed, populate it
+				deferredPackages[0] = deferredPhasedPackages
+			}
+		}
+	}
 
 	// Parse the output from apt-get -s upgrade
 	// Format: Inst <pkg> [<old>] (<new> <repo> ...)
 	re := regexp.MustCompile(`^Inst\s+(\S+)(?:\s+\[([^\]]+)\])?\s+\(([^ )]+)`)
-	sc := bufio.NewScanner(strings.NewReader(string(output)))
+	sc = bufio.NewScanner(strings.NewReader(string(output)))
 	for sc.Scan() {
 		line := strings.TrimSpace(sc.Text())
 		if line == "" || !strings.HasPrefix(line, "Inst ") {
@@ -514,6 +594,15 @@ func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType, in
 		pkgName := m[1]
 		current := strings.TrimSpace(m[2])
 		target := strings.TrimSpace(m[3])
+
+		// Check if this package is phased
+		isPhased := false
+		if len(deferredPackages) > 0 && deferredPackages[0] != nil {
+			// If a deferred packages map was provided, check if this package is in it
+			if _, isDeferred := deferredPackages[0][pkgName]; isDeferred {
+				isPhased = true
+			}
+		}
 
 		// Filter by update type if needed
 		if updateType != UpdateTypeAll && updateType != "" {
@@ -531,6 +620,7 @@ func (h *Handler) checkAPTUpdates(ctx context.Context, updateType UpdateType, in
 			Name:    pkgName,
 			Current: current,
 			Target:  target,
+			IsPhased: isPhased,
 		})
 	}
 

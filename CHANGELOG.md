@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-02-17
+
+### Added
+- **Issue #10 - Phased Updates Detection**: Full support for Ubuntu's phased updates feature.
+  - Detects packages that have been "deferred due to phasing" using `apt-get -s upgrade` output
+  - Properly marks packages with IsPhased field in JSON output
+  - Separately counts and lists phased updates (phased_updates_count, phased_updates_list, phased_updates_details)
+  - Phased updates are excluded from security/recommended/optional categories to avoid double-counting
+- Two-pass update detection system:
+  - First pass with Always-Include-Phased-Updates=false to detect deferred packages
+  - Second pass with Always-Include-Phased-Updates=true to get full package list
+  - Correctly sets IsPhased field based on which packages were deferred
+- Line-by-line parsing of "deferred due to phasing" section from apt-get output
+- Updated isPhasedUpdate() function to check IsPhased field in addition to target version string
+
+### Changed
+- **APT command**: Switched back to `apt-get -s upgrade` for proper phased update detection
+- Enhanced parsing logic to handle both "deferred due to phasing" message and Inst lines
+- Improved UpdateInfo struct with IsPhased boolean field for accurate package classification
+- Updated GetAllUpdates to properly filter and categorize all update types
+
+### Fixed
+- Proper slice mutation handling for variadic parameters in Go (fixed issue where deferred packages map wasn't being returned)
+- Correct assignment of IsPhased field during second pass when all packages are included
+- Accurate counting of phased vs non-phased updates
+
 ## [0.7.0] - 2026-02-03
 
 ### Added
