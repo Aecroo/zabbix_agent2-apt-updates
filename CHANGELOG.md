@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Project Structure**: Organized source code into `src/` directory for better maintainability
 - **Version**: Major version bump to 1.0.0 indicating production stability
-- All imports updated to use `github.com/netdata/zabbix-agent-apt-updates/src/plugin`
+- All imports updated to use `zabbix-agent2-apt-updates/src/plugin`
 
 ### Fixed
 - Import path resolution in Go module system
