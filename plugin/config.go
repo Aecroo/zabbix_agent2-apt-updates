@@ -54,7 +54,12 @@ func (p *APTUpdatesPlugin) Configure(global *plugin.GlobalOptions, options any) 
 	p.config = pConfig
 
 	if p.config.Timeout == 0 {
+		// Set a reasonable default (15 seconds) for apt commands
+		// which can be slow on some systems, especially with phased updates
 		p.config.Timeout = global.Timeout
+		if p.config.Timeout < 10 {
+			p.config.Timeout = 10
+		}
 	}
 }
 
