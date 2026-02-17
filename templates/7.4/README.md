@@ -139,7 +139,7 @@ The template uses the following tags for better organization and filtering:
 
 1. Download the template file:
    ```bash
-   wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/raw/branch/master/templates/7.4/apt_updates_zabbix_agent2.yaml -O apt_updates_template.yaml
+   wget https://raw.githubusercontent.com/Aecroo/zabbix_agent2-apt-updates/master/templates/7.4/apt_updates_zabbix_agent2.yaml -O apt_updates_template.yaml
    ```
 
 2. In the Zabbix web interface:
@@ -269,7 +269,7 @@ All dependent items use JSONPath preprocessing to extract specific fields from t
 
 For issues and questions related to this template:
 
-- **Project repository**: http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates
+- **Project repository**: https://github.com/Aecroo/zabbix_agent2-apt-updates
 - **Documentation**: See the main [README.md](../../README.md) in the project root
 - **Plugin version**: Ensure your plugin is version 1.0.0 or later for full compatibility
 

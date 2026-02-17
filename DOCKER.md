@@ -22,7 +22,7 @@ The project provides three Docker configurations:
 
 ```bash
 # Clone the repository
-git clone http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates.git
+git clone https://github.com/Aecroo/zabbix_agent2-apt-updates.git
 cd zabbix-agent2-apt-updates
 
 # Build and start the Zabbix Agent container

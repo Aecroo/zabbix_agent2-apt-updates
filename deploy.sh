@@ -57,9 +57,9 @@ esac
 echo "Detected architecture: $ARCH"
 
 # Base URL for releases (update this to your actual release URL)
-BASE_URL="http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v1.0.0"
+BASE_URL="https://github.com/Aecroo/zabbix_agent2-apt-updates/releases/download/v1.0.0"
 BINARY_URL="${BASE_URL}/${BINARY_NAME}"
-CONFIG_URL="http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/raw/branch/master/apt-updates.conf"
+CONFIG_URL="https://raw.githubusercontent.com/Aecroo/zabbix_agent2-apt-updates/master/apt-updates.conf"
 
 # Installation paths
 INSTALL_DIR=${PLUGIN_DIR:-/etc/zabbix}

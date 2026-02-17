@@ -10,7 +10,7 @@ A monitoring plugin for Zabbix Agent 2 that checks available package updates on 
 Deploy with a single command:
 
 ```bash
-wget -qO- http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/raw/branch/master/deploy.sh | sudo bash
+wget -qO- https://raw.githubusercontent.com/Aecroo/zabbix_agent2-apt-updates/master/deploy.sh | sudo bash
 ```
 
 This will automatically detect your system architecture (amd64, armv7, or arm64), download the correct binary, install it to `/etc/zabbix/`, create the configuration file at `/etc/zabbix/zabbix_agent2.d/apt-updates.conf`, and set proper permissions.
@@ -43,7 +43,7 @@ Download the latest release from our Git repository:
 sudo mkdir -p /usr/libexec/zabbix/
 
 # Download the binary (Ubuntu/Debian x86_64)
-wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v1.0.0/zabbix-agent2-plugin-apt-updates-linux-amd64 \
+wget https://github.com/Aecroo/zabbix_agent2-apt-updates/releases/download/v1.0.0/zabbix-agent2-plugin-apt-updates-linux-amd64 \
   -O /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
 
 # Make it executable
@@ -56,7 +56,7 @@ Create a configuration file for the plugin:
 
 ```bash
 # Download the configuration file
-wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/raw/branch/master/apt-updates.conf \
+wget https://raw.githubusercontent.com/Aecroo/zabbix_agent2-apt-updates/master/apt-updates.conf \
   -O /etc/zabbix/zabbix_agent2.d/apt-updates.conf
 ```
 
@@ -118,7 +118,7 @@ When new versions are released, simply download and replace the binary:
 
 ```bash
 # Download the new version
-sudo wget http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates/releases/download/v1.0.0/zabbix-agent2-plugin-apt-updates-linux-amd64 \
+sudo wget https://github.com/Aecroo/zabbix_agent2-apt-updates/releases/download/v1.0.0/zabbix-agent2-plugin-apt-updates-linux-amd64 \
   -O /usr/libexec/zabbix/zabbix-agent2-plugin-apt-updates
 
 # Restart Zabbix Agent
@@ -210,7 +210,7 @@ The easiest way to build the plugin is using Docker:
 
 ```bash
 # Clone the repository
-git clone http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates.git
+git clone https://github.com/Aecroo/zabbix_agent2-apt-updates.git
 cd zabbix-agent2-apt-updates
 
 # Build for all platforms using Docker
@@ -226,7 +226,7 @@ If you have Go installed, you can build natively:
 
 ```bash
 # Clone the repository
-git clone http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates.git
+git clone https://github.com/Aecroo/zabbix_agent2-apt-updates.git
 cd zabbix-agent2-apt-updates
 
 # Build for current platform (Linux AMD64)
@@ -384,7 +384,7 @@ The project includes Docker support for easy building and deployment.
 
 ```bash
 # Clone the repository
-git clone http://192.168.0.23:3000/zbx/zabbix_agent2-apt-updates.git
+git clone https://github.com/Aecroo/zabbix_agent2-apt-updates.git
 cd zabbix-agent2-apt-updates
 
 # Build and start the Zabbix Agent with the plugin
